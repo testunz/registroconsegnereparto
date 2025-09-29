@@ -1,0 +1,5 @@
+{
+  "name": "Registro Consegne Medicina Interna Soverato",
+  "description": "Applicazione web per la gestione dei pazienti e delle consegne cliniche. Opera offline con salvataggio locale dei dati.",
+  "requestFramePermissions": []
+}
