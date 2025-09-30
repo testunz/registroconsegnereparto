@@ -6,37 +6,45 @@ interface PrintDashboardProps {
   patients: Patient[];
 }
 
-const PrintBed: React.FC<{ patient?: Patient; bedNumber: string }> = ({ patient, bedNumber }) => {
-    // FIX: Corrected typo 'completato' to 'effettuato' to match the ExamStatus type.
-    const pendingExams = patient?.externalExams.filter(ex => ex.status !== 'effettuato') || [];
+const calculateAge = (dateOfBirth: string): number | null => {
+    if (!dateOfBirth) return null;
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
+};
 
+const PrintBed: React.FC<{ patient?: Patient; bedNumber: string }> = ({ patient, bedNumber }) => {
+    const age = patient ? calculateAge(patient.dateOfBirth) : null;
     return (
-        <div className="border border-black p-2 break-inside-avoid-page flex flex-col">
-            <div className="flex-grow min-h-[4rem]"> {/* Aggiunto min-height per consistenza */}
-                <p className="text-sm font-bold border-b border-black pb-1 mb-1">Letto {bedNumber}</p>
+        <div className="border border-black p-2 break-inside-avoid-page flex flex-col min-h-[12rem]">
+            <div className="flex-grow">
+                <p className="text-base font-bold border-b border-black pb-1 mb-1">Letto {bedNumber}</p>
                 {patient ? (
-                    <div>
-                        <p className="text-sm font-bold truncate">{patient.lastName} {patient.firstName}</p>
-                        {pendingExams.length > 0 && (
-                            <div className="mt-1">
-                                <p className="text-xs font-semibold uppercase">Esami:</p>
-                                <ul className="list-disc pl-3 text-xs">
-                                    {pendingExams.map(ex => (
-                                        <li key={ex.id}>{ex.description}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
+                    <div className="space-y-1">
+                        <p className="text-sm font-extrabold truncate">{patient.lastName} {patient.firstName}</p>
+                        <p className="text-xs truncate">
+                            {new Date(patient.dateOfBirth).toLocaleDateString('it-IT')} ({age} anni)
+                        </p>
+                        <p className="text-xs truncate">
+                            Ricovero: {new Date(patient.admissionDate).toLocaleDateString('it-IT')}
+                        </p>
+                        <p className="text-xs font-semibold mt-1" title={patient.mainDiagnosis}>
+                           Dx: {patient.mainDiagnosis || 'N/D'}
+                        </p>
                     </div>
                 ) : (
-                    <p className="text-sm text-black">Libero</p>
+                    <p className="text-center text-sm text-gray-500 pt-8">Libero</p>
                 )}
             </div>
             {/* Sezione Note */}
             <div className="mt-2 pt-1 border-t border-dashed border-black">
                 <p className="text-xs text-black font-semibold">Note:</p>
-                {/* Spazio vuoto per scrivere */}
-                <div style={{ height: '50px' }}></div>
+                <div style={{ minHeight: '50px' }}></div>
             </div>
         </div>
     );
@@ -45,7 +53,7 @@ const PrintBed: React.FC<{ patient?: Patient; bedNumber: string }> = ({ patient,
 const PrintSection: React.FC<{ title: string; beds: string[]; patientsByBed: Map<string, Patient> }> = ({ title, beds, patientsByBed }) => (
     <div className="mb-6 break-inside-avoid">
         <h2 className="text-xl font-extrabold border-b-2 border-black pb-2 mb-4">{title}</h2>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-2">
             {beds.map(bed => (
                 <PrintBed key={bed} bedNumber={bed} patient={patientsByBed.get(bed)} />
             ))}

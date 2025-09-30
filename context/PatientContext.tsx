@@ -155,7 +155,6 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [patients, updateAndSavePatients]);
 
   const deleteExternalExam = useCallback((patientId: string, examId: string) => {
-     if (!window.confirm("Sei sicuro di voler eliminare questo esame?")) return;
     const newPatients = patients.map(p => {
       if (p.id === patientId) {
         return { ...p, externalExams: p.externalExams.filter(ex => ex.id !== examId), lastUpdated: Date.now() };

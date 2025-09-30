@@ -6,6 +6,8 @@ import { usePatients } from '../hooks/usePatients';
 import PatientForm from './PatientForm';
 import { usePrint } from '../hooks/usePrint';
 import Modal from './Modal';
+import ExamEditModal from './ExamEditModal';
+import ConfirmationModal from './ConfirmationModal';
 
 interface PatientDetailProps {
   patient: Patient;
@@ -13,6 +15,20 @@ interface PatientDetailProps {
 }
 
 type ActiveTab = 'clinica' | 'esami';
+
+const getStatusBadgeColor = (status: ExamStatus) => {
+    switch(status) {
+        case 'da_richiedere':
+            return 'bg-amber-200 text-amber-800 dark:bg-amber-800/50 dark:text-amber-200';
+        case 'prenotato':
+            return 'bg-blue-200 text-blue-800 dark:bg-blue-800/50 dark:text-blue-200';
+        case 'effettuato':
+             return 'bg-green-200 text-green-800 dark:bg-green-800/50 dark:text-green-200';
+        default:
+            return 'bg-slate-200 text-slate-800 dark:bg-slate-600 dark:text-slate-200';
+    }
+}
+
 
 const DetailSection: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className }) => (
     <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-lg dark:bg-slate-800 ${className}`}>
@@ -28,12 +44,14 @@ const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void
 );
 
 const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
-  const { dischargePatient, addHandover, updateHandover, addExternalExam, updateExternalExam, deleteExternalExam } = usePatients();
+  const { dischargePatient, addHandover, updateHandover, addExternalExam, deleteExternalExam } = usePatients();
   
   const [activeTab, setActiveTab] = useState<ActiveTab>('clinica');
   const [isEditing, setIsEditing] = useState(false);
   const [isDischargeModalOpen, setIsDischargeModalOpen] = useState(false);
   const [dischargeType, setDischargeType] = useState<DischargeType>('domicilio');
+  const [editingExam, setEditingExam] = useState<ExternalExam | null>(null);
+  const [examToDelete, setExamToDelete] = useState<ExternalExam | null>(null);
 
   const [newHandover, setNewHandover] = useState('');
    const [newHandoverSchedule, setNewHandoverSchedule] = useState({ date: '', time: '' });
@@ -103,9 +121,13 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
       }
   };
 
-  const handleUpdateExam = (examId: string, field: keyof ExternalExam, value: any) => {
-    updateExternalExam(patient.id, examId, {[field]: value});
+  const handleConfirmDeleteExam = () => {
+    if (examToDelete) {
+      deleteExternalExam(patient.id, examToDelete.id);
+      setExamToDelete(null);
+    }
   };
+
 
   const isArchived = useMemo(() => patient.status === 'discharged', [patient.status]);
 
@@ -210,26 +232,30 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
              <div>
                  <DetailSection title="Esami Esterni / Consulenze">
                     <div className="space-y-2">
-                        {patient.externalExams.map(ex => (
-                            <div key={ex.id} className="grid grid-cols-1 lg:grid-cols-12 gap-x-4 gap-y-2 items-center text-base p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50">
-                                <div className="lg:col-span-4">
-                                    <p className="font-semibold text-slate-800 dark:text-slate-200">{ex.description}</p>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">{EXAM_CATEGORIES[ex.category]}</p>
-                                </div>
-                                <div className="lg:col-span-3">
-                                    <select value={ex.status} onChange={e => handleUpdateExam(ex.id, 'status', e.target.value)} className="w-full p-1.5 border rounded-md text-base bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200" disabled={isArchived}>
-                                        {Object.entries(EXAM_STATUS_NAMES).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
-                                    </select>
-                                </div>
-                                <div className="lg:col-span-2"><input type="date" value={ex.reminderDate || ''} onChange={e => handleUpdateExam(ex.id, 'reminderDate', e.target.value)} className="w-full p-1 border rounded-md text-base dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200" disabled={isArchived}/></div>
-                                <div className="lg:col-span-2">
-                                    <input type="date" value={ex.appointmentDate || ''} onChange={e => handleUpdateExam(ex.id, 'appointmentDate', e.target.value)} className="w-full p-1 border rounded-md text-base dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200" disabled={isArchived}/>
-                                </div>
-                                <div className="lg:col-span-1 flex items-center justify-end space-x-2">
-                                    <button onClick={() => deleteExternalExam(patient.id, ex.id)} className="text-red-500 hover:text-red-700 text-lg font-bold" disabled={isArchived}>&times;</button>
-                                </div>
-                                <div className="col-span-full text-right">
-                                     <p className="text-sm text-slate-400 dark:text-slate-500">Ultima modifica: {new Date(ex.updatedAt || ex.createdAt).toLocaleDateString('it-IT')}</p>
+                         {patient.externalExams.sort((a,b) => (a.appointmentDate || a.reminderDate || 'z').localeCompare(b.appointmentDate || b.reminderDate || 'z')).map(ex => (
+                            <div key={ex.id} onClick={() => !isArchived && setEditingExam(ex)} className={`p-3 rounded-lg group transition-colors ${!isArchived ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700' : ''} bg-slate-50 dark:bg-slate-700/50`}>
+                                <div className="flex justify-between items-start gap-4">
+                                    <div className="flex-grow">
+                                        <p className="font-semibold text-slate-800 dark:text-slate-200">{ex.description}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{EXAM_CATEGORIES[ex.category]}</p>
+                                        
+                                        <div className="mt-2 text-sm space-y-1">
+                                            {ex.appointmentDate && <p className="font-bold text-blue-600 dark:text-blue-400">Appuntamento: {new Date(ex.appointmentDate).toLocaleDateString('it-IT')}</p>}
+                                            {!ex.appointmentDate && ex.reminderDate && <p className="text-amber-600 dark:text-amber-400">Promemoria: {new Date(ex.reminderDate).toLocaleDateString('it-IT')}</p>}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center flex-shrink-0 gap-x-2">
+                                         <span className={`font-semibold px-2 py-0.5 rounded-full text-sm ${getStatusBadgeColor(ex.status)}`}>{EXAM_STATUS_NAMES[ex.status]}</span>
+                                         {!isArchived && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); setExamToDelete(ex); }} 
+                                                className="text-slate-400 hover:text-red-600 dark:hover:text-red-400 text-2xl font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Elimina Esame"
+                                            >
+                                                &times;
+                                            </button>
+                                         )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -247,6 +273,7 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
                  </DetailSection>
             </div>
         )}
+
       <Modal isOpen={isDischargeModalOpen} onClose={() => setIsDischargeModalOpen(false)} title="Conferma Dimissione">
         <div className="space-y-6">
             <p className="text-lg text-slate-600 dark:text-slate-300">
@@ -272,6 +299,25 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
             </div>
         </div>
       </Modal>
+
+      {editingExam && (
+        <ExamEditModal
+            isOpen={!!editingExam}
+            onClose={() => setEditingExam(null)}
+            patient={patient}
+            exam={editingExam}
+        />
+      )}
+
+      <ConfirmationModal
+        isOpen={!!examToDelete}
+        onClose={() => setExamToDelete(null)}
+        onConfirm={handleConfirmDeleteExam}
+        title="Conferma Eliminazione Esame"
+        message={`Sei sicuro di voler eliminare l'esame "${examToDelete?.description}"?`}
+        confirmButtonText="Sì, elimina"
+      />
+      
       {isEditing && <PatientForm isOpen={isEditing} onClose={() => setIsEditing(false)} patientToEdit={patient} />}
       <div className="hidden"><PrintLayout ref={printRef} patient={patient}/></div>
     </div>
