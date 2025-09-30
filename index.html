@@ -7,7 +7,15 @@
     <title>Registro Consegne Medicina Interna Soverato</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      // Supporto per Dark Mode e script per prevenire FOUC (Flash of Unstyled Content)
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             colors: {
@@ -38,7 +46,7 @@
 }
 </script>
 </head>
-  <body class="bg-slate-100">
+  <body class="bg-slate-100 dark:bg-slate-900">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

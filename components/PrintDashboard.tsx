@@ -7,28 +7,37 @@ interface PrintDashboardProps {
 }
 
 const PrintBed: React.FC<{ patient?: Patient; bedNumber: string }> = ({ patient, bedNumber }) => {
-    const pendingExams = patient?.externalExams.filter(ex => ex.status !== 'completato') || [];
+    // FIX: Corrected typo 'completato' to 'effettuato' to match the ExamStatus type.
+    const pendingExams = patient?.externalExams.filter(ex => ex.status !== 'effettuato') || [];
 
     return (
-        <div className="border border-black p-2 break-inside-avoid-page">
-            <p className="text-sm font-bold border-b border-black pb-1 mb-1">Letto {bedNumber}</p>
-            {patient ? (
-                <div>
-                    <p className="text-sm font-bold truncate">{patient.lastName} {patient.firstName}</p>
-                    {pendingExams.length > 0 && (
-                        <div className="mt-1">
-                            <p className="text-xs font-semibold uppercase">Esami:</p>
-                            <ul className="list-disc pl-3 text-xs">
-                                {pendingExams.map(ex => (
-                                    <li key={ex.id}>{ex.description}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <p className="text-sm text-gray-500">Libero</p>
-            )}
+        <div className="border border-black p-2 break-inside-avoid-page flex flex-col">
+            <div className="flex-grow min-h-[4rem]"> {/* Aggiunto min-height per consistenza */}
+                <p className="text-sm font-bold border-b border-black pb-1 mb-1">Letto {bedNumber}</p>
+                {patient ? (
+                    <div>
+                        <p className="text-sm font-bold truncate">{patient.lastName} {patient.firstName}</p>
+                        {pendingExams.length > 0 && (
+                            <div className="mt-1">
+                                <p className="text-xs font-semibold uppercase">Esami:</p>
+                                <ul className="list-disc pl-3 text-xs">
+                                    {pendingExams.map(ex => (
+                                        <li key={ex.id}>{ex.description}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <p className="text-sm text-black">Libero</p>
+                )}
+            </div>
+            {/* Sezione Note */}
+            <div className="mt-2 pt-1 border-t border-dashed border-black">
+                <p className="text-xs text-black font-semibold">Note:</p>
+                {/* Spazio vuoto per scrivere */}
+                <div style={{ height: '50px' }}></div>
+            </div>
         </div>
     );
 };

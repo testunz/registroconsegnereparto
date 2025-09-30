@@ -8,7 +8,9 @@ import ArchiveView from './ArchiveView';
 import PatientDetail from './PatientDetail';
 import PatientForm from './PatientForm';
 import PrintDashboard from './PrintDashboard';
+import ActivityView from './ActivityView';
 import { usePrint } from '../hooks/usePrint';
+import { useTheme } from '../hooks/useTheme';
 
 const MainLayout: React.FC = () => {
   const [view, setView] = useState<View>('dashboard');
@@ -17,6 +19,7 @@ const MainLayout: React.FC = () => {
   const [newPatientBed, setNewPatientBed] = useState<string | null>(null);
 
   const { getPatientById, activePatients, refreshData } = usePatients();
+  const { theme, toggleTheme } = useTheme();
 
   const printDashboardRef = useRef<HTMLDivElement>(null);
   const handlePrintDashboard = usePrint(printDashboardRef);
@@ -56,6 +59,8 @@ const MainLayout: React.FC = () => {
         return <Dashboard onSelectPatient={handleSelectPatient} onAddPatient={handleOpenNewPatientForm} />;
       case 'archive':
         return <ArchiveView onSelectPatient={handleSelectPatient} />;
+      case 'attività':
+        return <ActivityView />;
       case 'patient_detail':
         const patient = getPatientById(selectedPatientId!);
         if (!patient) return <Dashboard onSelectPatient={handleSelectPatient} onAddPatient={handleOpenNewPatientForm} />;
@@ -66,15 +71,17 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans">
+    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans dark:bg-slate-900 dark:text-slate-200">
       <Header 
         currentView={view} 
         setView={handleViewChange} 
         onImport={handleImport}
         onExport={exportData}
         onPrintDashboard={handlePrintDashboard}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
-      <main className="p-4 sm:p-6 lg:p-8 max-w-screen-2xl mx-auto">
+      <main className="p-4 sm:p-6 lg:p-8 mx-auto">
         {renderView()}
       </main>
       {isNewPatientModalOpen && newPatientBed && (

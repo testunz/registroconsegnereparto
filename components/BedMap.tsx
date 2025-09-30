@@ -1,6 +1,6 @@
 import React from 'react';
 import { Patient } from '../types';
-import { BEDS } from '../constants';
+import { ROOM_LAYOUT } from '../constants';
 import BedCard from './BedCard';
 
 interface BedMapProps {
@@ -8,15 +8,6 @@ interface BedMapProps {
   onSelectPatient: (patientId: string) => void;
   onAddPatient: (bed: string) => void;
 }
-
-const BedSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="mb-8">
-        <h2 className="text-xl font-bold mb-4 text-slate-700">{title}</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-4">
-            {children}
-        </div>
-    </div>
-);
 
 const BedMap: React.FC<BedMapProps> = ({ patients, onSelectPatient, onAddPatient }) => {
   const patientsByBed = new Map(patients.map(p => [p.bed, p]));
@@ -37,11 +28,21 @@ const BedMap: React.FC<BedMapProps> = ({ patients, onSelectPatient, onAddPatient
   };
 
   return (
-    <div className="space-y-6">
-        <BedSection title="Uomini">{renderBeds(BEDS.men)}</BedSection>
-        <BedSection title="Donne">{renderBeds(BEDS.women)}</BedSection>
-        <BedSection title="Lungodegenza Uomini">{renderBeds(BEDS.ldu)}</BedSection>
-        <BedSection title="Lungodegenza Donne">{renderBeds(BEDS.ldd)}</BedSection>
+    <div className="space-y-8">
+      {ROOM_LAYOUT.map((section, sectionIndex) => (
+        <div key={`section-${sectionIndex}`} className="flex flex-wrap items-start -m-3">
+          {section.groups.map((group, groupIndex) => (
+            <div key={`group-${groupIndex}`} className="p-3">
+              <div className="bg-slate-200/40 dark:bg-slate-800/30 p-4 rounded-xl">
+                 {group.title && <h3 className="text-lg font-semibold mb-3 text-center text-slate-600 dark:text-slate-400">{group.title}</h3>}
+                <div className="flex flex-wrap gap-5">
+                  {renderBeds(group.beds)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 };

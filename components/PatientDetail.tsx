@@ -1,10 +1,11 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Patient, ExternalExam, ExamCategory, ExamStatus } from '../types';
-import { SEVERITY_COLORS, SEVERITY_NAMES, EXAM_STATUS_NAMES, EXAM_CATEGORIES } from '../constants';
+import { Patient, ExternalExam, ExamCategory, ExamStatus, DischargeType } from '../types';
+import { SEVERITY_COLORS, SEVERITY_NAMES, EXAM_STATUS_NAMES, EXAM_CATEGORIES, DISCHARGE_TYPE_NAMES } from '../constants';
 import PrintLayout from './PrintLayout';
 import { usePatients } from '../hooks/usePatients';
 import PatientForm from './PatientForm';
 import { usePrint } from '../hooks/usePrint';
+import Modal from './Modal';
 
 interface PatientDetailProps {
   patient: Patient;
@@ -14,57 +15,93 @@ interface PatientDetailProps {
 type ActiveTab = 'clinica' | 'esami';
 
 const DetailSection: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className }) => (
-    <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-lg ${className}`}>
-        <h3 className="text-lg font-bold text-slate-800 border-b border-slate-200 pb-3 mb-4">{title}</h3>
+    <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-lg dark:bg-slate-800 ${className}`}>
+        <h3 className="text-xl font-bold text-slate-800 border-b border-slate-200 pb-3 mb-4 dark:text-slate-200 dark:border-slate-700">{title}</h3>
         {children}
     </div>
 );
 
 const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void}> = ({ label, isActive, onClick }) => (
-    <button onClick={onClick} className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}>
+    <button onClick={onClick} className={`px-4 py-2 text-base font-semibold rounded-md transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700'}`}>
         {label}
     </button>
 );
 
 const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
-  const { dischargePatient, addHandover, addExternalExam, updateExternalExam, deleteExternalExam } = usePatients();
+  const { dischargePatient, addHandover, updateHandover, addExternalExam, updateExternalExam, deleteExternalExam } = usePatients();
   
   const [activeTab, setActiveTab] = useState<ActiveTab>('clinica');
   const [isEditing, setIsEditing] = useState(false);
-  
+  const [isDischargeModalOpen, setIsDischargeModalOpen] = useState(false);
+  const [dischargeType, setDischargeType] = useState<DischargeType>('domicilio');
+
   const [newHandover, setNewHandover] = useState('');
+   const [newHandoverSchedule, setNewHandoverSchedule] = useState({ date: '', time: '' });
   const [newExam, setNewExam] = useState({
     category: 'laboratorio' as ExamCategory,
     description: '',
-    status: 'da_prenotare' as ExamStatus,
+    status: 'da_richiedere' as ExamStatus,
+    reminderDate: '',
     appointmentDate: '',
-    showInDashboardReminder: true,
   });
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = usePrint(printRef);
 
-  const handleDischarge = () => {
-    if(window.confirm(`Sei sicuro di voler dimettere il paziente ${patient.lastName} ${patient.firstName}?`)) {
-        dischargePatient(patient.id);
-        onClose();
-    }
+  const handleDischargeClick = () => {
+      setIsDischargeModalOpen(true);
+  }
+
+  const handleConfirmDischarge = () => {
+    dischargePatient(patient.id, dischargeType);
+    setIsDischargeModalOpen(false);
+    onClose();
   };
 
   const handleAddHandover = () => {
     if (newHandover.trim()) {
-        addHandover(patient.id, newHandover.trim());
+        let scheduledTimestamp: number | null = null;
+        if (newHandoverSchedule.date) {
+            const dateStr = `${newHandoverSchedule.date}${newHandoverSchedule.time ? `T${newHandoverSchedule.time}` : 'T00:00:00'}`;
+            scheduledTimestamp = new Date(dateStr).getTime();
+        }
+        addHandover(patient.id, newHandover.trim(), scheduledTimestamp);
         setNewHandover('');
+        setNewHandoverSchedule({ date: '', time: '' });
     }
   };
 
   const handleAddExam = (e: React.FormEvent) => {
     e.preventDefault();
     if (newExam.description.trim()) {
-        addExternalExam(patient.id, { ...newExam, appointmentDate: newExam.appointmentDate || null });
-        setNewExam({ category: 'laboratorio', description: '', status: 'da_prenotare', appointmentDate: '', showInDashboardReminder: true });
+        addExternalExam(patient.id, { 
+            ...newExam, 
+            reminderDate: newExam.reminderDate || null,
+            appointmentDate: newExam.appointmentDate || null 
+        });
+        setNewExam({ category: 'laboratorio', description: '', status: 'da_richiedere', reminderDate: '', appointmentDate: '' });
     }
   }
+
+  const handleSetAppointmentTomorrow = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.checked) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          setNewExam(prev => ({ ...prev, appointmentDate: tomorrow.toISOString().slice(0,10) }));
+      } else {
+          setNewExam(prev => ({ ...prev, appointmentDate: '' }));
+      }
+  };
+
+  const handleSetReminderTomorrow = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.checked) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          setNewExam(prev => ({ ...prev, reminderDate: tomorrow.toISOString().slice(0,10) }));
+      } else {
+          setNewExam(prev => ({ ...prev, reminderDate: '' }));
+      }
+  };
 
   const handleUpdateExam = (examId: string, field: keyof ExternalExam, value: any) => {
     updateExternalExam(patient.id, examId, {[field]: value});
@@ -74,28 +111,29 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-       <div className={`p-4 sm:p-6 bg-white rounded-xl shadow-lg border-l-8 ${SEVERITY_COLORS[patient.severity]}`}>
-            <div className="flex justify-between items-start">
+       <div className={`p-4 sm:p-6 bg-white rounded-xl shadow-lg border-l-8 dark:bg-slate-800 ${SEVERITY_COLORS[patient.severity]}`}>
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
                 <div>
-                    <h2 className="text-3xl font-extrabold text-slate-800">{patient.lastName} {patient.firstName}</h2>
-                    <p className="text-md text-slate-500 mt-1">
+                    <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-800 dark:text-slate-100">{patient.lastName} {patient.firstName}</h2>
+                    <p className="text-lg text-slate-500 mt-1 dark:text-slate-400">
                         <span className="font-semibold">Letto:</span> {patient.bed || 'N/D'} | <span className="font-semibold">Ricovero:</span> {patient.admissionType} | <span className="font-bold">{SEVERITY_NAMES[patient.severity]}</span>
+                         {isArchived && patient.dischargeType && ` | Dimesso: ${DISCHARGE_TYPE_NAMES[patient.dischargeType]}`}
                     </p>
-                    <p className="text-xs text-slate-400 mt-2">
+                    <p className="text-sm text-slate-400 mt-2 dark:text-slate-500">
                         Paziente inserito il {new Date(patient.createdAt).toLocaleDateString('it-IT')}
                     </p>
                 </div>
-                <div className="flex space-x-2 flex-shrink-0">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"> &larr; Indietro </button>
-                    <button onClick={handlePrint} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200"> Stampa </button>
+                <div className="flex flex-wrap gap-2 flex-shrink-0">
+                    <button onClick={onClose} className="px-4 py-2 text-base font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"> &larr; Indietro </button>
+                    <button onClick={handlePrint} className="px-4 py-2 text-base font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"> Stampa </button>
                     {!isArchived && (
-                      <button onClick={handleDischarge} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"> Dimetti </button>
+                      <button onClick={handleDischargeClick} className="px-4 py-2 text-base font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"> Dimetti </button>
                     )}
                 </div>
             </div>
         </div>
         
-        <div className="bg-slate-200/50 p-1 rounded-lg flex space-x-1 max-w-xs">
+        <div className="bg-slate-200/50 p-1 rounded-lg flex space-x-1 max-w-xs dark:bg-slate-700/50">
             <TabButton label="Clinica" isActive={activeTab === 'clinica'} onClick={() => setActiveTab('clinica')} />
             <TabButton label="Esami e Attività" isActive={activeTab === 'esami'} onClick={() => setActiveTab('esami')} />
         </div>
@@ -104,7 +142,7 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">
                     <DetailSection title="Informazioni Cliniche">
-                        <div className="space-y-4 text-sm text-slate-700">
+                        <div className="space-y-4 text-base text-slate-700 dark:text-slate-300">
                             <div><strong>Diagnosi Principale:</strong> <p className="whitespace-pre-wrap mt-1">{patient.mainDiagnosis || 'N/D'}</p></div>
                             <div><strong>Anamnesi:</strong> <p className="whitespace-pre-wrap mt-1">{patient.history || 'N/D'}</p></div>
                             <div><strong>Note Cliniche:</strong> <p className="whitespace-pre-wrap mt-1">{patient.clinicalNotes || 'N/D'}</p></div>
@@ -112,31 +150,55 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
                     </DetailSection>
                     <DetailSection title="Consegne Cliniche">
                         <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                            {patient.handovers.map(h => (
-                                <div key={h.id} className="bg-slate-50 p-3 rounded-lg text-sm">
-                                    <p className="text-slate-800 whitespace-pre-wrap">{h.text}</p>
-                                    <p className="text-xs text-slate-400 text-right mt-1">Inserito il {new Date(h.createdAt).toLocaleString('it-IT')}</p>
+                            {patient.handovers.sort((a,b) => (a.scheduledAt || a.createdAt) - (b.scheduledAt || b.createdAt)).map(h => (
+                                <div key={h.id} className={`p-3 rounded-lg text-base transition-colors ${h.isCompleted ? 'bg-slate-200 dark:bg-slate-800 opacity-60' : 'bg-slate-50 dark:bg-slate-700/50'}`}>
+                                    <div className="flex items-start gap-3">
+                                        {!isArchived && (
+                                          <input 
+                                            type="checkbox"
+                                            checked={!!h.isCompleted}
+                                            onChange={(e) => updateHandover(patient.id, h.id, { isCompleted: e.target.checked })}
+                                            className="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                          />
+                                        )}
+                                        <div className="flex-grow">
+                                          <p className={`text-slate-800 whitespace-pre-wrap dark:text-slate-200 ${h.isCompleted ? 'line-through' : ''}`}>{h.text}</p>
+                                          <div className="text-sm text-slate-400 text-right mt-1 dark:text-slate-500">
+                                              {h.scheduledAt && <span className="font-bold mr-2">Programmata per: {new Date(h.scheduledAt).toLocaleString('it-IT', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})}</span>}
+                                              <span>Inserito il {new Date(h.createdAt).toLocaleString('it-IT', {day: '2-digit', month: '2-digit'})}</span>
+                                          </div>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
                         {!isArchived && (
-                            <div className="mt-4 flex space-x-2">
-                                <textarea value={newHandover} onChange={e => setNewHandover(e.target.value)} placeholder="Aggiungi nuova consegna..." className="w-full p-2 border rounded-md text-sm" rows={2} spellCheck="false" autoComplete="off"/>
-                                <button onClick={handleAddHandover} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md self-end hover:bg-blue-700">Aggiungi</button>
+                            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                <textarea value={newHandover} onChange={e => setNewHandover(e.target.value)} placeholder="Aggiungi nuova consegna..." className="w-full p-2 border rounded-md text-base bg-white border-slate-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200" rows={2} spellCheck="false" autoComplete="off"/>
+                                <div className="mt-2 flex flex-wrap gap-4 items-end">
+                                    <div className="flex-grow">
+                                        <label className="text-sm font-medium text-slate-600 dark:text-slate-300 block mb-1">Programma per (opzionale)</label>
+                                        <div className="flex gap-2">
+                                            <input type="date" value={newHandoverSchedule.date} onChange={e => setNewHandoverSchedule(p => ({...p, date: e.target.value}))} className="w-full p-2 border rounded-md text-base dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200"/>
+                                            <input type="time" value={newHandoverSchedule.time} onChange={e => setNewHandoverSchedule(p => ({...p, time: e.target.value}))} className="w-full p-2 border rounded-md text-base dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200"/>
+                                        </div>
+                                    </div>
+                                    <button onClick={handleAddHandover} className="px-4 py-2 text-base font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 self-end">Aggiungi</button>
+                                </div>
                             </div>
                         )}
                     </DetailSection>
                 </div>
                 <div className="md:col-span-1">
                     <DetailSection title="Dati Paziente">
-                        <div className="space-y-2 text-sm text-slate-700">
+                        <div className="space-y-2 text-base text-slate-700 dark:text-slate-300">
                             <p><strong>Data Nascita:</strong> {new Date(patient.dateOfBirth).toLocaleDateString('it-IT') || 'N/D'}</p>
                             <p><strong>Data Ricovero:</strong> {new Date(patient.admissionDate).toLocaleDateString('it-IT') || 'N/D'}</p>
                             <p><strong>Sesso:</strong> {patient.gender === 'M' ? 'Uomo' : 'Donna'}</p>
                         </div>
                         {!isArchived && (
-                            <div className="mt-6 pt-4 border-t border-slate-200">
-                                <button onClick={() => setIsEditing(true)} className="w-full px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200">Modifica Dati</button>
+                            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                <button onClick={() => setIsEditing(true)} className="w-full px-4 py-2 text-base font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Modifica Dati</button>
                             </div>
                         )}
                     </DetailSection>
@@ -149,40 +211,67 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
                  <DetailSection title="Esami Esterni / Consulenze">
                     <div className="space-y-2">
                         {patient.externalExams.map(ex => (
-                            <div key={ex.id} className="grid grid-cols-12 gap-x-4 gap-y-2 items-center text-sm p-3 rounded-lg bg-slate-50">
-                                <div className="col-span-12 sm:col-span-4">
-                                    <p className="font-semibold text-slate-800">{ex.description}</p>
-                                    <p className="text-xs text-slate-500">{EXAM_CATEGORIES[ex.category]}</p>
+                            <div key={ex.id} className="grid grid-cols-1 lg:grid-cols-12 gap-x-4 gap-y-2 items-center text-base p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50">
+                                <div className="lg:col-span-4">
+                                    <p className="font-semibold text-slate-800 dark:text-slate-200">{ex.description}</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">{EXAM_CATEGORIES[ex.category]}</p>
                                 </div>
-                                <div className="col-span-6 sm:col-span-3">
-                                    <select value={ex.status} onChange={e => handleUpdateExam(ex.id, 'status', e.target.value)} className="w-full p-1.5 border rounded-md text-sm bg-white" disabled={isArchived}>
+                                <div className="lg:col-span-3">
+                                    <select value={ex.status} onChange={e => handleUpdateExam(ex.id, 'status', e.target.value)} className="w-full p-1.5 border rounded-md text-base bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200" disabled={isArchived}>
                                         {Object.entries(EXAM_STATUS_NAMES).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
                                     </select>
                                 </div>
-                                <div className="col-span-6 sm:col-span-3">
-                                    <input type="date" value={ex.appointmentDate || ''} onChange={e => handleUpdateExam(ex.id, 'appointmentDate', e.target.value)} className="w-full p-1 border rounded-md text-sm" disabled={isArchived}/>
+                                <div className="lg:col-span-2"><input type="date" value={ex.reminderDate || ''} onChange={e => handleUpdateExam(ex.id, 'reminderDate', e.target.value)} className="w-full p-1 border rounded-md text-base dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200" disabled={isArchived}/></div>
+                                <div className="lg:col-span-2">
+                                    <input type="date" value={ex.appointmentDate || ''} onChange={e => handleUpdateExam(ex.id, 'appointmentDate', e.target.value)} className="w-full p-1 border rounded-md text-base dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200" disabled={isArchived}/>
                                 </div>
-                                <div className="col-span-12 sm:col-span-2 flex items-center justify-end space-x-2">
+                                <div className="lg:col-span-1 flex items-center justify-end space-x-2">
                                     <button onClick={() => deleteExternalExam(patient.id, ex.id)} className="text-red-500 hover:text-red-700 text-lg font-bold" disabled={isArchived}>&times;</button>
                                 </div>
-                                <div className="col-span-12 text-right">
-                                     <p className="text-xs text-slate-400">Ultima modifica: {new Date(ex.updatedAt || ex.createdAt).toLocaleDateString('it-IT')}</p>
+                                <div className="col-span-full text-right">
+                                     <p className="text-sm text-slate-400 dark:text-slate-500">Ultima modifica: {new Date(ex.updatedAt || ex.createdAt).toLocaleDateString('it-IT')}</p>
                                 </div>
                             </div>
                         ))}
-                         {patient.externalExams.length === 0 && <p className="text-center text-slate-500 py-4">Nessun esame inserito.</p>}
+                         {patient.externalExams.length === 0 && <p className="text-center text-slate-500 py-4 dark:text-slate-400">Nessun esame inserito.</p>}
                     </div>
                     {!isArchived && (
-                        <form onSubmit={handleAddExam} className="mt-6 p-4 border-t border-slate-200 grid grid-cols-12 gap-4 items-end">
-                            <div className="col-span-12 sm:col-span-3"><label className="text-xs font-medium text-slate-600 block mb-1">Categoria</label><select value={newExam.category} onChange={e => setNewExam(p => ({...p, category: e.target.value as ExamCategory}))} className="w-full p-2 border rounded-md text-sm">{Object.entries(EXAM_CATEGORIES).map(([key, value]) => <option key={key} value={key}>{value}</option>)}</select></div>
-                            <div className="col-span-12 sm:col-span-5"><label className="text-xs font-medium text-slate-600 block mb-1">Descrizione</label><input type="text" value={newExam.description} onChange={e => setNewExam(p => ({...p, description: e.target.value}))} placeholder="Es. ECG, Rx Torace..." className="w-full p-2 border rounded-md text-sm" spellCheck="false" autoComplete="off" required/></div>
-                            <div className="col-span-6 sm:col-span-2"><label className="text-xs font-medium text-slate-600 block mb-1">Data</label><input type="date" value={newExam.appointmentDate} onChange={e => setNewExam(p => ({...p, appointmentDate: e.target.value}))} className="w-full p-2 border rounded-md text-sm"/></div>
-                            <div className="col-span-6 sm:col-span-2"><button type="submit" className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Aggiungi</button></div>
+                        <form onSubmit={handleAddExam} className="mt-6 p-4 border-t border-slate-200 dark:border-slate-700 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            <div className="md:col-span-3"><label className="text-sm font-medium text-slate-600 dark:text-slate-300 block mb-1">Categoria</label><select value={newExam.category} onChange={e => setNewExam(p => ({...p, category: e.target.value as ExamCategory}))} className="w-full p-2 border rounded-md text-base dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200">{Object.entries(EXAM_CATEGORIES).map(([key, value]) => <option key={key} value={key}>{value}</option>)}</select></div>
+                            <div className="md:col-span-4"><label className="text-sm font-medium text-slate-600 dark:text-slate-300 block mb-1">Descrizione</label><input type="text" value={newExam.description} onChange={e => setNewExam(p => ({...p, description: e.target.value}))} placeholder="Es. ECG, Rx Torace..." className="w-full p-2 border rounded-md text-base dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200" spellCheck="false" autoComplete="off" required/></div>
+                            <div className="md:col-span-2"><label className="text-sm font-medium text-slate-600 dark:text-slate-300 block mb-1">Data Promemoria</label><input type="date" value={newExam.reminderDate} onChange={e => setNewExam(p => ({...p, reminderDate: e.target.value}))} className="w-full p-2 border rounded-md text-base dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200"/><div className="flex items-center mt-1"><input type="checkbox" id="setReminderTomorrow" onChange={handleSetReminderTomorrow} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" /><label htmlFor="setReminderTomorrow" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">Domani</label></div></div>
+                            <div className="md:col-span-2"><label className="text-sm font-medium text-slate-600 dark:text-slate-300 block mb-1">Data Appuntamento</label><input type="date" value={newExam.appointmentDate} onChange={e => setNewExam(p => ({...p, appointmentDate: e.target.value}))} className="w-full p-2 border rounded-md text-base dark:bg-slate-900 dark:border-slate-600 dark:text-slate-200"/><div className="flex items-center mt-1"><input type="checkbox" id="setTomorrow" onChange={handleSetAppointmentTomorrow} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" /><label htmlFor="setTomorrow" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">Domani</label></div></div>
+                            <div className="md:col-span-1"><button type="submit" className="w-full px-4 py-2 text-base font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Aggiungi</button></div>
                         </form>
                     )}
                  </DetailSection>
             </div>
         )}
+      <Modal isOpen={isDischargeModalOpen} onClose={() => setIsDischargeModalOpen(false)} title="Conferma Dimissione">
+        <div className="space-y-6">
+            <p className="text-lg text-slate-600 dark:text-slate-300">
+            Sei sicuro di voler dimettere il paziente <strong>{patient.lastName} {patient.firstName}</strong>?
+            </p>
+            <div>
+            <label htmlFor="dischargeType" className="block text-base font-medium text-slate-700 mb-1 dark:text-slate-300">Esito della dimissione</label>
+            <select 
+                id="dischargeType" 
+                name="dischargeType" 
+                value={dischargeType} 
+                onChange={(e) => setDischargeType(e.target.value as DischargeType)}
+                className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white"
+            >
+                {Object.entries(DISCHARGE_TYPE_NAMES).map(([key, value]) => (
+                <option key={key} value={key as DischargeType}>{value}</option>
+                ))}
+            </select>
+            </div>
+            <div className="flex justify-end pt-4 space-x-2 border-t border-slate-200 dark:border-slate-700">
+            <button type="button" onClick={() => setIsDischargeModalOpen(false)} className="px-4 py-2 text-base font-medium text-slate-700 bg-white rounded-md border border-slate-300 hover:bg-slate-50 dark:bg-slate-600 dark:text-slate-200 dark:border-slate-500 dark:hover:bg-slate-500">Annulla</button>
+            <button type="button" onClick={handleConfirmDischarge} className="px-4 py-2 text-base font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Conferma Dimissione</button>
+            </div>
+        </div>
+      </Modal>
       {isEditing && <PatientForm isOpen={isEditing} onClose={() => setIsEditing(false)} patientToEdit={patient} />}
       <div className="hidden"><PrintLayout ref={printRef} patient={patient}/></div>
     </div>

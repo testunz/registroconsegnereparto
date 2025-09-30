@@ -5,10 +5,10 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'lg' }) => {
   if (!isOpen) return null;
 
   const sizeClasses: Record<string, string> = {
@@ -17,6 +17,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
     lg: 'max-w-lg',
     xl: 'max-w-xl',
     '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
+    '4xl': 'max-w-4xl',
   }
 
   return (
@@ -25,12 +27,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
       onClick={onClose}
     >
       <div 
-        className={`bg-slate-50 rounded-xl shadow-2xl w-full flex flex-col ${sizeClasses[size]}`}
+        className={`bg-slate-50 dark:bg-slate-800 rounded-xl shadow-2xl w-full flex flex-col ${sizeClasses[size]}`}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-4 border-b border-slate-200">
-          <h2 className="text-xl font-bold text-slate-800">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-800 text-2xl font-bold">&times;</button>
+        <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700">
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">{title}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 text-2xl font-bold">&times;</button>
         </div>
         <div className="p-6 overflow-y-auto" style={{maxHeight: '85vh'}}>
           {children}
