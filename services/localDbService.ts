@@ -7,221 +7,334 @@ const DB_KEY = 'medicina-interna-soverato-db-v4';
 
 const createRealPatients = (): Patient[] => {
     const reportDate = new Date('2025-09-29').getTime();
-
-    // Funzioni di utilità per la generazione casuale
-    const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-    const getRandomDate = (start: Date, end: Date): Date => new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
     const toISODate = (date: Date) => date.toISOString().slice(0, 10);
+    const today = new Date('2025-09-29');
+    const tomorrow = new Date('2025-09-30');
+    const dayAfterTomorrow = new Date('2025-10-01');
 
-    // Dati di esempio per la generazione
-    const MALE_NAMES = ['Mario', 'Carlo', 'Francesco', 'Alessandro', 'Davide', 'Simone', 'Marco', 'Luca', 'Paolo'];
-    const FEMALE_NAMES = ['Elisa', 'Martina', 'Sara', 'Alessia', 'Federica', 'Veronica', 'Roberta', 'Simona', 'Laura'];
-    const LAST_NAMES = ['Ferrari', 'Russo', 'Colombo', 'De Luca', 'Barbieri', 'Fontana', 'Santoro', 'Marchetti', 'Galli'];
-    const DIAGNOSES = ['Polmonite nosocomiale', 'Insufficienza cardiaca scompensata', 'Embolia polmonare', 'Sepsi da IVU', 'Colecistite acuta', 'Diverticolite', 'Ictus ischemico acuto', 'Sindrome coronarica acuta'];
-    const SEVERITIES: Severity[] = ['verde', 'giallo', 'rosso'];
+    const handoversTemplate = {
+        h1: (text: string): Handover => ({ id: crypto.randomUUID(), text, createdAt: reportDate, isCompleted: false }),
+        h2: (text: string, scheduledDate: Date): Handover => ({ id: crypto.randomUUID(), text, createdAt: reportDate, scheduledAt: scheduledDate.getTime(), isCompleted: false }),
+    };
 
-    const HANDOVER_TEXTS = ['Monitorare diuresi nelle 24h', 'Controllo parametri vitali ogni 4 ore', 'Attendere referto emocolture', 'Valutare introduzione di terapia marziale', 'Richiedere visita fisiatrica per mobilizzazione', 'Pianificare colloquio con i familiari', 'Eseguire ECG di controllo domattina'];
-    const LAB_EXAMS = ['Emocromo con formula', 'PCR, Procalcitonina', 'Funzionalità renale ed elettroliti', 'Enzimi cardiaci', 'Profilo epatico completo', 'Esame urine completo', 'Emogasanalisi arteriosa'];
-    const RADIO_EXAMS = ['Ecografia addome completo', 'TC Torace con mdc', 'Doppler arti inferiori', 'Rx diretta addome', 'Colangio-RMN', 'Rx Torace'];
-    const CONSULTATIONS = ['Consulenza cardiologica', 'Consulenza neurologica', 'Consulenza chirurgica', 'Valutazione nutrizionistica', 'Consulenza infettivologica'];
-    const EXAM_STATUSES: ExamStatus[] = ['da_richiedere', 'prenotato', 'effettuato'];
-
+    const examsTemplate = {
+        e1: (category: ExamCategory, description: string, notes?: string): ExternalExam => ({
+            id: crypto.randomUUID(), category, description, status: 'da_richiedere', reminderDate: toISODate(tomorrow), appointmentDate: null, createdAt: reportDate, notes,
+        }),
+        e2: (category: ExamCategory, description: string, appointmentDate: Date, notes?: string): ExternalExam => ({
+            id: crypto.randomUUID(), category, description, status: 'prenotato', reminderDate: null, appointmentDate: toISODate(appointmentDate), createdAt: reportDate, notes,
+        }),
+    };
 
     let patients: Patient[] = [
-        // UOMINI
+        // UOMINI (8/10, Letti liberi: 7, 10)
         {
-            id: crypto.randomUUID(),
-            firstName: 'Giovanni', lastName: 'Rossi', dateOfBirth: '1935-03-15',
-            admissionDate: '2025-09-24', gender: 'M', bed: '9',
-            admissionType: 'ordinario',
+            id: crypto.randomUUID(), firstName: 'Giovanni', lastName: 'Rossi', dateOfBirth: '1935-03-15',
+            admissionDate: '2025-09-24', gender: 'M', bed: '9', admissionType: 'ordinario',
             mainDiagnosis: 'Bronchite cronica riacutizzata',
             history: 'Ipertensione arteriosa, BPCO, pregresso infarto miocardico, insufficienza renale lieve.',
             clinicalNotes: 'Paziente vigile, collaborante. Stabile emodinamicamente.',
-            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-24').getTime(),
-            lastUpdated: reportDate, handovers: [], 
-            externalExams: [{
-                id: crypto.randomUUID(),
-                category: 'radiologia',
-                description: 'Rx Torace di controllo',
-                status: 'prenotato',
-                reminderDate: null,
-                appointmentDate: '2025-09-29',
-                createdAt: new Date('2025-09-27').getTime(),
-                notes: 'Eseguire in 2 proiezioni, senza mdc.',
-            }],
+            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-24').getTime(), lastUpdated: reportDate, 
+            handovers: [
+                handoversTemplate.h1('Monitorare diuresi nelle 24h.'),
+                handoversTemplate.h1('Controllo parametri vitali ogni 6 ore.'),
+            ], 
+            externalExams: [
+                examsTemplate.e2('radiologia', 'Rx Torace di controllo', today, 'Eseguire in 2 proiezioni, senza mdc.'),
+                examsTemplate.e1('laboratorio', 'Emogasanalisi arteriosa'),
+            ],
         },
         {
-            id: crypto.randomUUID(),
-            firstName: 'Luigi', lastName: 'Bianchi', dateOfBirth: '1945-05-20',
-            admissionDate: '2025-09-18', gender: 'M', bed: '8',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Versamento pleurico destro, Polmonite basale.',
+            id: crypto.randomUUID(), firstName: 'Luigi', lastName: 'Bianchi', dateOfBirth: '1945-05-20',
+            admissionDate: '2025-09-18', gender: 'M', bed: '8', admissionType: 'ordinario',
+            mainDiagnosis: 'Versamento pleurico destro in studio',
             history: 'Ictus ischemico pregresso con emiparesi sinistra, demenza vascolare, diabete mellito tipo 2.',
-            clinicalNotes: 'Allettato, poco collaborante. In ossigenoterapia.',
-            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-18').getTime(),
-            lastUpdated: reportDate, handovers: [], externalExams: [],
+            clinicalNotes: 'Allettato, poco collaborante. In ossigenoterapia. Sospetta eziologia neoplastica.',
+            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-18').getTime(), lastUpdated: reportDate, 
+            handovers: [
+                handoversTemplate.h1('Prevenzione lesioni da decubito, mobilizzazione nel letto.'),
+                handoversTemplate.h1('Valutare stato nutrizionale con dietista.'),
+            ], 
+            externalExams: [
+                examsTemplate.e1('laboratorio', 'Emocromo e PCR di controllo', 'Prelievo da eseguire domattina'),
+                examsTemplate.e2('consulenze', 'Consulenza Neurologica', dayAfterTomorrow),
+                examsTemplate.e2('radiologia', 'TC Torace con mdc', tomorrow),
+            ],
         },
         {
-            id: crypto.randomUUID(),
-            firstName: 'Paolo', lastName: 'Romano', dateOfBirth: '1940-11-02',
-            admissionDate: '2025-09-23', gender: 'M', bed: '6',
-            admissionType: 'ordinario',
+            id: crypto.randomUUID(), firstName: 'Paolo', lastName: 'Romano', dateOfBirth: '1940-11-02',
+            admissionDate: '2025-09-23', gender: 'M', bed: '6', admissionType: 'ordinario',
             mainDiagnosis: 'Neoplasia del colon con metastasi epatiche',
             history: 'Cardiopatia ischemica cronica, portatore di stent coronarico.',
             clinicalNotes: 'Presenta dolore addominale, in terapia antalgica con oppioidi. Condizioni generali scadute.',
-            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-23').getTime(),
-            lastUpdated: reportDate, handovers: [{ id: crypto.randomUUID(), text: 'Richiesta consulenza cure palliative.', createdAt: reportDate, scheduledAt: new Date('2025-09-29T10:00:00').getTime(), isCompleted: false }], externalExams: [],
+            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-23').getTime(), lastUpdated: reportDate, 
+            handovers: [
+                handoversTemplate.h1('Richiesta consulenza cure palliative.'),
+                handoversTemplate.h1('Gestione del dolore, rivalutare VAS ogni 4 ore.'),
+            ], 
+            externalExams: [
+                examsTemplate.e1('laboratorio', 'Marcatori tumorali (CEA)'),
+                examsTemplate.e2('radiologia', 'Ecografia addome completo', dayAfterTomorrow, 'Paziente a digiuno da 6 ore'),
+            ],
         },
         {
-            id: crypto.randomUUID(),
-            firstName: 'Antonio', lastName: 'Esposito', dateOfBirth: '1972-01-30',
-            admissionDate: '2025-09-28', gender: 'M', bed: '4',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Crisi epilettica in paziente con pregressa epilessia, stato febbrile.',
-            history: 'Epilessia in trattamento farmacologico da anni. Non altre comorbidità di rilievo.',
-            clinicalNotes: 'Attualmente apiretico, post-critico. In attesa di EEG.',
-            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-28').getTime(),
-            lastUpdated: reportDate, handovers: [], externalExams: [],
+            id: crypto.randomUUID(), firstName: 'Mario', lastName: 'Esposito', dateOfBirth: '1960-07-22',
+            admissionDate: '2025-09-28', gender: 'M', bed: '1', admissionType: 'ordinario',
+            mainDiagnosis: 'Polmonite comunitaria (CAP)',
+            history: 'Diabete Mellito di tipo 2 in terapia orale.',
+            clinicalNotes: 'Iniziata terapia antibiotica empirica. Attualmente febbrile.',
+            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-28').getTime(), lastUpdated: reportDate,
+            handovers: [
+                handoversTemplate.h1('Monitoraggio della febbre e della saturazione.'),
+                handoversTemplate.h1('Controllo glicemico prima dei pasti.'),
+            ],
+            externalExams: [
+                examsTemplate.e1('laboratorio', 'Procalcitonina'),
+                examsTemplate.e2('laboratorio', 'Urinocoltura', tomorrow),
+            ],
         },
         {
-            id: crypto.randomUUID(),
-            firstName: 'Giuseppe', lastName: 'Ricci', dateOfBirth: '1939-07-12',
-            admissionDate: '2025-09-27', gender: 'M', bed: '3',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Squilibrio elettrolitico, disidratazione da gastroenterite',
-            history: 'Diabete tipo 2, Insufficienza renale cronica, demenza senile. Allergia nota a penicillina.',
-            clinicalNotes: 'Confuso, disorientato. In reidratazione endovenosa.',
-            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-27').getTime(),
-            lastUpdated: reportDate, handovers: [{ id: crypto.randomUUID(), text: 'Eseguire TC addome per sospetta diverticolite', createdAt: reportDate, isCompleted: false }], externalExams: [],
-        },
-        // DONNE
-        {
-            id: crypto.randomUUID(),
-            firstName: 'Anna', lastName: 'Moretti', dateOfBirth: '1942-06-15',
-            admissionDate: '2025-09-27', gender: 'F', bed: 'LDD1',
-            admissionType: 'lungodegenza',
-            mainDiagnosis: 'Lesione da decubito sacrale in paziente allettata con decadimento cognitivo.',
-            history: 'Morbo di Alzheimer, diabete mellito tipo II, ipertensione arteriosa.',
-            clinicalNotes: 'Necessita di medicazioni avanzate giornaliere.',
-            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-27').getTime(),
-            lastUpdated: reportDate, handovers: [], externalExams: [],
+            id: crypto.randomUUID(), firstName: 'Antonio', lastName: 'Russo', dateOfBirth: '1955-01-30',
+            admissionDate: '2025-09-27', gender: 'M', bed: '2', admissionType: 'ordinario',
+            mainDiagnosis: 'Trombosi Venosa Profonda (TVP) arto inferiore sx',
+            history: 'Ipertensione arteriosa, obesità.',
+            clinicalNotes: 'Iniziata terapia anticoagulante con eparina. Edema e dolore in miglioramento.',
+            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-27').getTime(), lastUpdated: reportDate,
+            handovers: [
+                handoversTemplate.h1('Mobilizzazione cauta come da indicazioni.'),
+                handoversTemplate.h1('Monitoraggio parametri coagulativi (aPTT).'),
+            ],
+            externalExams: [
+                examsTemplate.e2('radiologia', 'Ecodoppler di controllo tra 48h', dayAfterTomorrow),
+            ],
         },
         {
-            id: crypto.randomUUID(),
-            firstName: 'Sofia', lastName: 'Greco', dateOfBirth: '1962-09-10',
-            admissionDate: '2025-09-25', gender: 'F', bed: '20',
-            admissionType: 'ordinario',
+            id: crypto.randomUUID(), firstName: 'Giuseppe', lastName: 'Ferrari', dateOfBirth: '1948-09-12',
+            admissionDate: '2025-09-26', gender: 'M', bed: '3', admissionType: 'ordinario',
+            mainDiagnosis: 'Scompenso epatico su cirrosi',
+            history: 'Cirrosi epatica HCV correlata, pregressi episodi di ascite.',
+            clinicalNotes: 'Paziente soporoso, presenta flapping tremor. Iniziata terapia per encefalopatia epatica.',
+            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-26').getTime(), lastUpdated: reportDate,
+            handovers: [
+                handoversTemplate.h1('Monitoraggio stato di coscienza (GCS).'),
+                handoversTemplate.h1('Controllo ammoniemia.'),
+                handoversTemplate.h1('Valutare paracentesi se aumento ascite.'),
+            ],
+            externalExams: [
+                examsTemplate.e1('laboratorio', 'Funzionalità epatica completa'),
+            ],
+        },
+        {
+            id: crypto.randomUUID(), firstName: 'Sergio', lastName: 'Costa', dateOfBirth: '1939-12-08',
+            admissionDate: '2025-09-29', gender: 'M', bed: '4', admissionType: 'ordinario',
+            mainDiagnosis: 'Anemizzazione da rettorragia',
+            history: 'Cardiopatia ischemica in terapia con antiaggreganti.',
+            clinicalNotes: 'Stabile emodinamicamente dopo trasfusione di 2 GRC. Sospesa terapia antiaggregante.',
+            severity: 'giallo', status: 'active', createdAt: reportDate, lastUpdated: reportDate,
+            handovers: [
+                handoversTemplate.h1('Monitoraggio Hb post-trasfusionale.'),
+                handoversTemplate.h1('Contattare endoscopia per EGDS/Colonscopia in urgenza.'),
+            ],
+            externalExams: [
+                examsTemplate.e2('consulenze', 'Consulenza Gastroenterologica', today),
+            ],
+        },
+        {
+            id: crypto.randomUUID(), firstName: 'Roberto', lastName: 'Marino', dateOfBirth: '1942-04-25',
+            admissionDate: '2025-09-25', gender: 'M', bed: '5', admissionType: 'ordinario',
+            mainDiagnosis: 'Sincope di ndd',
+            history: 'Ipertensione, pregressa TIA.',
+            clinicalNotes: 'Paziente asintomatico dopo episodio sincopale a domicilio. ECG e enzimi cardiaci negativi.',
+            severity: 'verde', status: 'active', createdAt: new Date('2025-09-25').getTime(), lastUpdated: reportDate,
+            handovers: [
+                handoversTemplate.h1('Monitoraggio telemetrico.'),
+                handoversTemplate.h1('Educare il paziente a non alzarsi bruscamente.'),
+            ],
+            externalExams: [
+                examsTemplate.e2('radiologia', 'Ecocolordoppler TSA', tomorrow),
+                examsTemplate.e1('consulenze', 'Consulenza Cardiologica per Holter'),
+            ],
+        },
+
+        // LUNGODEGENZA UOMINI (2/2)
+        {
+            id: crypto.randomUUID(), firstName: 'Franco', lastName: 'Gallo', dateOfBirth: '1958-02-11',
+            admissionDate: '2025-09-20', gender: 'M', bed: 'LDU1', admissionType: 'lungodegenza',
+            mainDiagnosis: 'Recupero post-operatorio anca',
+            history: 'Ipertensione',
+            clinicalNotes: 'In attesa di trasferimento in struttura riabilitativa.',
+            severity: 'verde', status: 'active', createdAt: new Date('2025-09-20').getTime(), lastUpdated: reportDate, 
+            handovers: [
+                handoversTemplate.h1('Mobilizzazione passiva assistita 2 volte al dì.'),
+                handoversTemplate.h1('Medicazione ferita chirurgica a giorni alterni.'),
+            ], 
+            externalExams: [
+                examsTemplate.e1('laboratorio', 'Controllo elettroliti'),
+            ],
+        },
+        {
+            id: crypto.randomUUID(), firstName: 'Aldo', lastName: 'De Luca', dateOfBirth: '1946-08-03',
+            admissionDate: '2025-09-15', gender: 'M', bed: 'LDU2', admissionType: 'lungodegenza',
+            mainDiagnosis: 'Esiti di ictus ischemico',
+            history: 'Fibrillazione atriale, diabete.',
+            clinicalNotes: 'Paziente con emiparesi destra e afasia motoria. Programma riabilitativo in corso.',
+            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-15').getTime(), lastUpdated: reportDate,
+            handovers: [
+                handoversTemplate.h1('Prevenzione delle cadute.'),
+                handoversTemplate.h1('Logopedia 3 volte a settimana.'),
+            ],
+            externalExams: [
+                examsTemplate.e2('consulenze', 'Controllo Fisiatrico', dayAfterTomorrow),
+            ],
+        },
+
+        // DONNE (8/10, Letti liberi: 16, 17)
+        {
+            id: crypto.randomUUID(), firstName: 'Sofia', lastName: 'Greco', dateOfBirth: '1962-09-10',
+            admissionDate: '2025-09-25', gender: 'F', bed: '20', admissionType: 'ordinario',
             mainDiagnosis: 'Ictus cerebellare recente',
             history: 'Ipertensione arteriosa, Fibrillazione atriale in TAO, protesi valvolare mitralica meccanica.',
             clinicalNotes: 'Presenta vertigini e atassia. Inizia percorso riabilitativo.',
-            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-25').getTime(),
-            lastUpdated: reportDate, handovers: [], externalExams: [],
+            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-25').getTime(), lastUpdated: reportDate, 
+            handovers: [
+                handoversTemplate.h1('Inizio FKT motoria e del cammino.'),
+                handoversTemplate.h1('Controllo TAO (INR) domattina.'),
+            ], 
+            externalExams: [
+                examsTemplate.e2('radiologia', 'Ecocardiogramma di controllo', dayAfterTomorrow),
+                examsTemplate.e1('radiologia', 'Doppler TSA'),
+            ],
         },
         {
-            id: crypto.randomUUID(),
-            firstName: 'Giulia', lastName: 'Conti', dateOfBirth: '1943-08-19',
-            admissionDate: '2025-09-26', gender: 'F', bed: '19',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Dolore addominale in studio, sospetta pancreatite',
+            id: crypto.randomUUID(), firstName: 'Giulia', lastName: 'Conti', dateOfBirth: '1943-08-19',
+            admissionDate: '2025-09-26', gender: 'F', bed: '19', admissionType: 'ordinario',
+            mainDiagnosis: 'Dolore addominale in studio',
             history: 'Osteoporosi severa, sindrome ansioso-depressiva.',
-            clinicalNotes: 'Tende a camminare da sola nel reparto, aumentato rischio cadute.',
-            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-26').getTime(),
-            lastUpdated: reportDate, handovers: [{ id: crypto.randomUUID(), text: 'Attenzione al rischio cadute, paziente poco collaborante.', createdAt: reportDate, isCompleted: false }], externalExams: [],
+            clinicalNotes: 'Tende a camminare da sola nel reparto, aumentato rischio cadute. In programma EGDS.',
+            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-26').getTime(), lastUpdated: reportDate, 
+            handovers: [
+                handoversTemplate.h1('Attenzione al rischio cadute, paziente poco collaborante.'),
+                handoversTemplate.h1('Valutazione diario alimentare e monitoraggio alvo.'),
+            ], 
+            externalExams: [
+                examsTemplate.e2('radiologia', 'Gastroscopia', tomorrow),
+                examsTemplate.e1('laboratorio', 'Sangue occulto feci su 3 campioni'),
+            ],
         },
         {
-            id: crypto.randomUUID(),
-            firstName: 'Maria', lastName: 'Bruno', dateOfBirth: '1948-11-25',
-            admissionDate: '2025-09-19', gender: 'F', bed: '18',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Infezione delle vie urinarie con febbre',
+            id: crypto.randomUUID(), firstName: 'Maria', lastName: 'Bruno', dateOfBirth: '1948-11-25',
+            admissionDate: '2025-09-19', gender: 'F', bed: '18', admissionType: 'ordinario',
+            mainDiagnosis: 'Infezione delle vie urinarie complicata',
             history: 'Diabete Mellito tipo 2, Fibrillazione atriale cronica, scompenso cardiaco cronico.',
-            clinicalNotes: 'In terapia antibiotica mirata. Attualmente apiretica.',
-            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-19').getTime(),
-            lastUpdated: reportDate, handovers: [{ id: crypto.randomUUID(), text: 'Controllare esami urine e PCR a 48h', createdAt: reportDate, isCompleted: true }], externalExams: [],
+            clinicalNotes: 'In terapia antibiotica mirata. Attualmente apiretica. Da rivalutare funzione renale.',
+            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-19').getTime(), lastUpdated: reportDate, 
+            handovers: [
+                handoversTemplate.h1('Controllare esami urine e PCR a 48h.'),
+                handoversTemplate.h1('Valutare stato di idratazione e bilancio idrico.'),
+            ], 
+            externalExams: [
+                examsTemplate.e1('laboratorio', 'Creatinina e urea di controllo'),
+            ],
+        },
+        {
+            id: crypto.randomUUID(), firstName: 'Elena', lastName: 'Rizzo', dateOfBirth: '1951-04-01',
+            admissionDate: '2025-09-29', gender: 'F', bed: '11', admissionType: 'ordinario',
+            mainDiagnosis: 'Scompenso cardiaco riacutizzato',
+            history: 'Ipertensione, diabete, cardiopatia ischemica.',
+            clinicalNotes: 'Stabile dopo terapia diuretica e.v. Netto miglioramento della dispnea.',
+            severity: 'verde', status: 'active', createdAt: reportDate, lastUpdated: reportDate, 
+            handovers: [
+                handoversTemplate.h1('Controllo peso corporeo giornaliero.'),
+                handoversTemplate.h1('Programmare switch a terapia diuretica orale.'),
+            ], 
+            externalExams: [
+                examsTemplate.e2('laboratorio', 'BNP di controllo', dayAfterTomorrow),
+                examsTemplate.e1('laboratorio', 'Iono plasmatico e funzione renale'),
+            ],
+        },
+        {
+            id: crypto.randomUUID(), firstName: 'Laura', lastName: 'Galli', dateOfBirth: '1970-03-05',
+            admissionDate: '2025-09-28', gender: 'F', bed: '12', admissionType: 'ordinario',
+            mainDiagnosis: 'Pielonefrite acuta',
+            history: 'Nessuna patologia di rilievo.',
+            clinicalNotes: 'Presenta febbre e dolore lombare. Iniziata terapia antibiotica dopo prelievi colturali.',
+            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-28').getTime(), lastUpdated: reportDate,
+            handovers: [
+                handoversTemplate.h1('Assicurare adeguata idratazione.'),
+                handoversTemplate.h1('Monitorare la risposta alla terapia antibiotica.'),
+            ],
+            externalExams: [
+                examsTemplate.e1('laboratorio', 'Emocolture x2'),
+                examsTemplate.e2('radiologia', 'Ecografia renale', tomorrow),
+            ],
+        },
+        {
+            id: crypto.randomUUID(), firstName: 'Chiara', lastName: 'Fontana', dateOfBirth: '1949-10-18',
+            admissionDate: '2025-09-27', gender: 'F', bed: '13', admissionType: 'ordinario',
+            mainDiagnosis: 'Fibrillazione Atriale ad alta risposta ventricolare',
+            history: 'Ipertensione arteriosa, dislipidemia.',
+            clinicalNotes: 'Ritmo cardiaco controllato con terapia farmacologica. Emodinamicamente stabile.',
+            severity: 'verde', status: 'active', createdAt: new Date('2025-09-27').getTime(), lastUpdated: reportDate,
+            handovers: [
+                handoversTemplate.h1('Valutare inizio terapia anticoagulante.'),
+                handoversTemplate.h1('Monitoraggio ECG continuo.'),
+            ],
+            externalExams: [
+                examsTemplate.e2('consulenze', 'Consulenza Cardiologica', today),
+                examsTemplate.e1('laboratorio', 'Funzione tiroidea (TSH, FT4)'),
+            ],
+        },
+        {
+            id: crypto.randomUUID(), firstName: 'Caterina', lastName: 'Santoro', dateOfBirth: '1938-05-29',
+            admissionDate: '2025-09-26', gender: 'F', bed: '14', admissionType: 'ordinario',
+            mainDiagnosis: 'Delirium ipercinetico',
+            history: 'Demenza senile, ipertensione.',
+            clinicalNotes: 'Paziente agitata e disorientata, soprattutto nelle ore notturne. In corso ricerca di cause scatenanti.',
+            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-26').getTime(), lastUpdated: reportDate,
+            handovers: [
+                handoversTemplate.h1('Garantire ambiente tranquillo e illuminato.'),
+                handoversTemplate.h1('Evitare mezzi di contenzione se possibile.'),
+            ],
+            externalExams: [
+                examsTemplate.e1('laboratorio', 'Esame urine e indici di flogosi'),
+                examsTemplate.e2('consulenze', 'Valutazione Geriatrica', tomorrow),
+            ],
+        },
+         {
+            id: crypto.randomUUID(), firstName: 'Silvia', lastName: 'Colombo', dateOfBirth: '1965-11-11',
+            admissionDate: '2025-09-29', gender: 'F', bed: '15', admissionType: 'ordinario',
+            mainDiagnosis: 'Chetoacidosi diabetica',
+            history: 'Diabete Mellito tipo 1 di lunga data.',
+            clinicalNotes: 'Quadro clinico in miglioramento dopo idratazione e infusione insulinica. Gap anionico in riduzione.',
+            severity: 'giallo', status: 'active', createdAt: reportDate, lastUpdated: reportDate,
+            handovers: [
+                handoversTemplate.h1('Monitoraggio glicemico orario.'),
+                handoversTemplate.h1('Controllo emogasanalisi seriati.'),
+            ],
+            externalExams: [
+                examsTemplate.e1('laboratorio', 'Elettroliti, con focus sul potassio'),
+                examsTemplate.e2('consulenze', 'Consulenza Diabetologica', dayAfterTomorrow),
+            ],
+        },
+
+        // LUNGODEGENZA DONNE (1/2, Letto libero: LDD2)
+        {
+            id: crypto.randomUUID(), firstName: 'Anna', lastName: 'Moretti', dateOfBirth: '1942-06-15',
+            admissionDate: '2025-09-22', gender: 'F', bed: 'LDD1', admissionType: 'lungodegenza',
+            mainDiagnosis: 'Lesione da decubito sacrale III stadio',
+            history: 'Morbo di Alzheimer, diabete mellito tipo II, ipertensione arteriosa.',
+            clinicalNotes: 'Necessita di medicazioni avanzate giornaliere e supporto nutrizionale.',
+            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-22').getTime(), lastUpdated: reportDate, 
+            handovers: [
+                handoversTemplate.h1('Medicazione lesione sacrale con schiuma di poliuretano.'),
+                handoversTemplate.h1('Garantire apporto proteico adeguato.'),
+            ], 
+            externalExams: [
+                examsTemplate.e2('consulenze', 'Consulenza Fisiatrica per presidi', tomorrow),
+                examsTemplate.e1('laboratorio', 'Albumina e prealbumina'),
+            ],
         },
     ];
-
-    const occupiedBeds = new Set(patients.map(p => p.bed));
-
-    // Riempi i letti vuoti
-    ALL_BEDS.forEach(bed => {
-        if (!occupiedBeds.has(bed)) {
-            const isLduOrLdd = bed.startsWith('LD');
-            const gender: Gender = BEDS.men.includes(bed) || BEDS.ldu.includes(bed) ? 'M' : 'F';
-            
-            const newPatient: Patient = {
-                id: crypto.randomUUID(),
-                firstName: getRandomElement(gender === 'M' ? MALE_NAMES : FEMALE_NAMES),
-                lastName: getRandomElement(LAST_NAMES),
-                dateOfBirth: toISODate(getRandomDate(new Date('1930-01-01'), new Date('1965-01-01'))),
-                admissionDate: toISODate(getRandomDate(new Date('2025-09-15'), new Date('2025-09-28'))),
-                gender,
-                bed,
-                admissionType: isLduOrLdd ? 'lungodegenza' : 'ordinario',
-                mainDiagnosis: getRandomElement(DIAGNOSES),
-                history: 'Anamnesi non ancora raccolta.',
-                clinicalNotes: 'Condizioni al momento stabili.',
-                severity: getRandomElement(SEVERITIES),
-                status: 'active',
-                createdAt: new Date().getTime(),
-                lastUpdated: new Date().getTime(),
-                handovers: [],
-                externalExams: [],
-            };
-            patients.push(newPatient);
-        }
-    });
-
-    // Aggiungi consegne ed esami a tutti i pazienti
-    patients.forEach(p => {
-        // Pulisci le attività esistenti per evitare duplicati al riavvio
-        p.handovers = [];
-        p.externalExams = [];
-
-        // Aggiungi 1-3 consegne
-        for (let i = 0; i < Math.floor(Math.random() * 3) + 1; i++) {
-            const isCompleted = Math.random() > 0.6;
-            const hasSchedule = Math.random() > 0.5;
-            p.handovers.push({
-                id: crypto.randomUUID(),
-                text: getRandomElement(HANDOVER_TEXTS),
-                createdAt: getRandomDate(new Date(p.admissionDate), new Date()).getTime(),
-                isCompleted,
-                scheduledAt: hasSchedule ? getRandomDate(new Date(), new Date(new Date().getTime() + 5 * 24 * 60 * 60 * 1000)).getTime() : null,
-            });
-        }
-        
-        // Aggiungi 2-4 esami
-        for (let i = 0; i < Math.floor(Math.random() * 3) + 2; i++) {
-            const category = getRandomElement<ExamCategory>(['laboratorio', 'radiologia', 'consulenze']);
-            let description = '';
-            switch (category) {
-                case 'laboratorio': description = getRandomElement(LAB_EXAMS); break;
-                case 'radiologia': description = getRandomElement(RADIO_EXAMS); break;
-                case 'consulenze': description = getRandomElement(CONSULTATIONS); break;
-            }
-
-            const status = getRandomElement(EXAM_STATUSES);
-            let appointmentDate: string | null = null;
-            let reminderDate: string | null = null;
-
-            if (status === 'prenotato') {
-                appointmentDate = toISODate(getRandomDate(new Date(), new Date(new Date().getTime() + 10 * 24 * 60 * 60 * 1000)));
-            } else if (status === 'da_richiedere') {
-                 if(Math.random() > 0.5) reminderDate = toISODate(getRandomDate(new Date(), new Date(new Date().getTime() + 5 * 24 * 60 * 60 * 1000)));
-            }
-            
-            p.externalExams.push({
-                id: crypto.randomUUID(),
-                category,
-                description,
-                status,
-                appointmentDate,
-                reminderDate,
-                createdAt: getRandomDate(new Date(p.admissionDate), new Date()).getTime(),
-            });
-        }
-    });
 
     return patients;
 };

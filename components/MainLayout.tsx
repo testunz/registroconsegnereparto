@@ -2,7 +2,8 @@ import React, { useState, useCallback, useRef } from 'react';
 import { View } from '../types';
 import { usePatients } from '../hooks/usePatients';
 import { importData } from '../services/localDbService';
-import Header from './Header';
+// Fix: Changed to a named import as Header.tsx does not have a default export.
+import { Header } from './Header';
 import Dashboard from './Dashboard';
 import ArchiveView from './ArchiveView';
 import PatientDetail from './PatientDetail';

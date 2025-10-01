@@ -30,6 +30,13 @@ const SeverityStatItem: React.FC<{ label: string; count: number; percentage: str
     </div>
 );
 
+const MobileStat: React.FC<{label: string; value: string | number; colorClass?: string}> = ({label, value, colorClass = 'text-slate-700 dark:text-slate-300'}) => (
+    <div className="text-center">
+        <p className={`text-xs font-semibold uppercase ${colorClass}`}>{label}</p>
+        <p className={`text-lg font-bold ${colorClass}`}>{value}</p>
+    </div>
+);
+
 
 const BedOccupancyStats: React.FC = () => {
     const { activePatients } = usePatients();
@@ -70,34 +77,43 @@ const BedOccupancyStats: React.FC = () => {
 
     return (
         <div className="bg-slate-50 border-t border-slate-200 dark:bg-slate-800/50 dark:border-slate-700">
-            <div className="mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap justify-center items-center gap-x-6 gap-y-2 sm:gap-x-12">
+            {/* Mobile View: Simplified */}
+            <div className="mx-auto px-4 py-2 flex sm:hidden justify-around items-center">
+                <MobileStat label="Totale" value={`${stats.totalOccupied} / ${stats.totalBeds}`} colorClass="text-blue-600 dark:text-blue-400" />
+                <MobileStat label="Critici" value={stats.severities.rosso} colorClass={SEVERITY_TEXT_COLORS.rosso} />
+                <MobileStat label="Moderati" value={stats.severities.giallo} colorClass={SEVERITY_TEXT_COLORS.giallo} />
+                <MobileStat label="Stabili" value={stats.severities.verde} colorClass={SEVERITY_TEXT_COLORS.verde} />
+            </div>
+
+            {/* Desktop View: Full details */}
+            <div className="mx-auto px-4 sm:px-6 lg:px-8 py-3 hidden sm:flex flex-wrap justify-center items-center gap-x-4 sm:gap-x-8 gap-y-4">
                 <StatItem label="Uomini" occupied={stats.menOccupied} total={stats.menTotal} />
                 <StatItem label="Donne" occupied={stats.womenOccupied} total={stats.womenTotal} />
                 
-                <div className="flex items-center gap-x-4 bg-slate-100 dark:bg-slate-700/50 px-4 py-1 rounded-lg">
+                <div className="flex items-center gap-x-4 px-4 py-1 rounded-lg">
                     <div className="text-center">
-                        <p className={`text-base font-semibold text-sky-600 dark:text-sky-400`}>LDU</p>
-                        <p className={`text-xl font-bold ${stats.lduOccupied === stats.lduTotal ? 'text-red-500' : 'text-sky-600 dark:text-sky-400'}`}>
+                        <p className={`text-base font-semibold ${stats.lduOccupied === stats.lduTotal ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>LDU</p>
+                        <p className={`text-xl font-bold ${stats.lduOccupied === stats.lduTotal ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>
                             {stats.lduOccupied} / {stats.lduTotal}
                         </p>
                     </div>
                     <div className="text-center">
-                        <p className={`text-base font-semibold text-pink-600 dark:text-pink-400`}>LDD</p>
-                         <p className={`text-xl font-bold ${stats.lddOccupied === stats.lddTotal ? 'text-red-500' : 'text-pink-600 dark:text-pink-400'}`}>
+                        <p className={`text-base font-semibold ${stats.lddOccupied === stats.lddTotal ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>LDD</p>
+                         <p className={`text-xl font-bold ${stats.lddOccupied === stats.lddTotal ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>
                             {stats.lddOccupied} / {stats.lddTotal}
                         </p>
                     </div>
                 </div>
 
-                 <div className="border-l border-slate-300 dark:border-slate-600 h-10 self-center"></div>
+                 <div className="hidden sm:block border-l border-slate-300 dark:border-slate-600 h-10 self-center"></div>
                 <StatItemSimple label="Ordinario" value={stats.ordinarioCount} />
                 <StatItemSimple label="Lungodegenza" value={stats.lungodegenzaCount} />
-                 <div className="border-l border-slate-300 dark:border-slate-600 h-10 self-center"></div>
+                 <div className="hidden sm:block border-l border-slate-300 dark:border-slate-600 h-10 self-center"></div>
                  <div className="text-center">
                     <p className="text-base font-semibold text-slate-700 dark:text-slate-300">Totale Occupati</p>
                     <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{stats.totalOccupied} / {stats.totalBeds}</p>
                 </div>
-                <div className="border-l border-slate-300 dark:border-slate-600 h-10 self-center"></div>
+                <div className="hidden sm:block border-l border-slate-300 dark:border-slate-600 h-10 self-center"></div>
                 <SeverityStatItem label="Critici" count={stats.severities.rosso} percentage={getPercentage(stats.severities.rosso, stats.totalWithSeverity)} colorClass={SEVERITY_TEXT_COLORS.rosso} />
                 <SeverityStatItem label="Moderati" count={stats.severities.giallo} percentage={getPercentage(stats.severities.giallo, stats.totalWithSeverity)} colorClass={SEVERITY_TEXT_COLORS.giallo} />
                 <SeverityStatItem label="Stabili" count={stats.severities.verde} percentage={getPercentage(stats.severities.verde, stats.totalWithSeverity)} colorClass={SEVERITY_TEXT_COLORS.verde} />
