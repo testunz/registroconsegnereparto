@@ -62,12 +62,27 @@ const BedCard: React.FC<BedCardProps> = ({ bedNumber, patient, onSelectPatient, 
           <span className="text-xl font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-md dark:bg-slate-700 dark:text-slate-400">Letto {bedNumber}</span>
           {hasPendingExams && <BellIcon />}
         </div>
-        <div className="flex-grow">
-            <p className="font-bold text-2xl sm:text-3xl text-slate-800 truncate dark:text-slate-100">{patient.lastName}</p>
-            <p className="font-normal text-xl sm:text-2xl text-slate-600 truncate dark:text-slate-300">{patient.firstName}</p>
-            <p className="text-base font-semibold text-slate-700 dark:text-slate-300 truncate mt-2" title={patient.mainDiagnosis}>{patient.mainDiagnosis || 'Diagnosi non specificata'}</p>
-            <div className="text-base text-slate-500 dark:text-slate-400 mt-2 space-y-1">
-                 {age !== null && <p>Età: ({age}) {new Date(patient.dateOfBirth).toLocaleDateString('it-IT')}</p>}
+        <div className="flex-grow flex flex-col justify-between">
+            <div>
+                <div title={`${patient.firstName} ${patient.lastName}`}>
+                    <p className="font-bold text-2xl sm:text-3xl text-slate-800 dark:text-slate-100 leading-tight">
+                        {patient.firstName}
+                    </p>
+                    <p className="font-semibold text-xl sm:text-2xl text-slate-700 dark:text-slate-200 leading-tight">
+                        {patient.lastName}
+                    </p>
+                </div>
+                <p className="text-base font-semibold text-slate-700 dark:text-slate-300 truncate mt-2" title={patient.mainDiagnosis}>{patient.mainDiagnosis || 'Diagnosi non specificata'}</p>
+            </div>
+            <div className="text-base text-slate-500 dark:text-slate-400 mt-2 space-y-1 min-h-14">
+                 {age !== null && (
+                    <p>
+                        Età: ({age}) {new Date(patient.dateOfBirth).toLocaleDateString('it-IT')}
+                        {patient.admissionType === 'lungodegenza' && (
+                            <span className="ml-2 text-sm font-bold text-sky-500 dark:text-sky-400">LD</span>
+                        )}
+                    </p>
+                 )}
                  <p>Ric: ({lengthOfStay} gg) {new Date(patient.admissionDate).toLocaleDateString('it-IT')}</p>
             </div>
         </div>

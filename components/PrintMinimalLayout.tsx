@@ -55,7 +55,10 @@ const PrintMinimalLayout: React.FC<PrintMinimalLayoutProps> = ({ patients }) => 
               return (
                 <tr key={bed} className="break-inside-avoid">
                   <td className="border border-black p-2 font-bold text-center">{patient.bed}</td>
-                  <td className="border border-black p-2 font-semibold">{patient.lastName} {patient.firstName}</td>
+                  <td className="border border-black p-2 font-semibold">
+                    {patient.lastName} {patient.firstName}
+                    {patient.admissionType === 'lungodegenza' && ' (LD)'}
+                  </td>
                   <td className="border border-black p-2 text-center font-bold">{lengthOfStay} gg</td>
                   <td className={`border border-black p-2 text-center font-bold ${severityClass}`}>
                     {SEVERITY_NAMES[patient.severity].replace('Condizioni ', '').replace('Moderate', 'Moder.')}

@@ -31,7 +31,7 @@ const SeverityEditModal: React.FC<SeverityEditModalProps> = ({ isOpen, onClose, 
         <Modal isOpen={isOpen} onClose={onClose} title="Modifica Codice di Gravità">
             <div className="space-y-6">
                 <p className="text-lg text-slate-600 dark:text-slate-300">
-                    Seleziona il nuovo codice di gravità per il paziente <strong>{patient.lastName} {patient.firstName}</strong>.
+                    Seleziona il nuovo codice di gravità per il paziente <strong>{patient.lastName} {patient.firstName}{patient.admissionType === 'lungodegenza' && ' (LD)'}</strong>.
                 </p>
                 <div>
                     <label htmlFor="severity-select" className="block text-base font-medium text-slate-700 mb-1 dark:text-slate-300">Codice Gravità</label>

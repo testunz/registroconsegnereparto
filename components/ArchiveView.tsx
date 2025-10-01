@@ -13,7 +13,10 @@ const ArchiveCard: React.FC<{ patient: Patient; onClick: () => void }> = ({ pati
         onClick={onClick}
     >
         <div className="flex justify-between items-start">
-            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{patient.lastName} {patient.firstName}</h3>
+            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                {patient.lastName} {patient.firstName}
+                {patient.admissionType === 'lungodegenza' && <span className="text-sky-600 dark:text-sky-400"> (LD)</span>}
+            </h3>
             <span className="text-sm font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded-md dark:bg-slate-700 dark:text-slate-300">{patient.dischargeType ? DISCHARGE_TYPE_NAMES[patient.dischargeType] : 'N/D'}</span>
         </div>
         <div className="mt-3 space-y-2 text-base text-slate-600 dark:text-slate-400">
@@ -77,6 +80,7 @@ const ArchiveView: React.FC<ArchiveViewProps> = ({ onSelectPatient }) => {
               >
                 <th scope="row" className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap dark:text-white">
                   {patient.lastName} {patient.firstName}
+                  {patient.admissionType === 'lungodegenza' && <span className="font-semibold text-sky-600 dark:text-sky-400"> (LD)</span>}
                 </th>
                 <td className="px-6 py-4">{new Date(patient.admissionDate).toLocaleDateString('it-IT')}</td>
                 <td className="px-6 py-4 truncate max-w-xs">{patient.mainDiagnosis}</td>

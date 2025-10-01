@@ -15,6 +15,14 @@ const StatItem: React.FC<{ label: string; occupied: number; total: number }> = (
     );
 };
 
+const StatItemSimple: React.FC<{ label: string; value: number | string; }> = ({ label, value }) => (
+    <div className="text-center">
+        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">{label}</p>
+        <p className="text-xl font-bold text-slate-700 dark:text-slate-300">{value}</p>
+    </div>
+);
+
+
 const SeverityStatItem: React.FC<{ label: string; count: number; percentage: string; colorClass: string }> = ({ label, count, percentage, colorClass }) => (
     <div className="text-center">
         <p className={`text-base font-semibold ${colorClass}`}>{label}</p>
@@ -37,6 +45,9 @@ const BedOccupancyStats: React.FC = () => {
         const totalOccupied = menOccupied + womenOccupied + ldOccupied;
         const totalBeds = menTotal + womenTotal + ldTotal;
 
+        const ordinarioCount = activePatients.filter(p => p.admissionType === 'ordinario').length;
+        const lungodegenzaCount = activePatients.filter(p => p.admissionType === 'lungodegenza').length;
+
         const severities: Record<Severity, number> = { rosso: 0, giallo: 0, verde: 0 };
         activePatients.forEach(p => {
             if (p.severity) {
@@ -46,7 +57,7 @@ const BedOccupancyStats: React.FC = () => {
         const totalWithSeverity = severities.rosso + severities.giallo + severities.verde;
 
 
-        return { menTotal, womenTotal, ldTotal, menOccupied, womenOccupied, ldOccupied, totalOccupied, totalBeds, severities, totalWithSeverity };
+        return { menTotal, womenTotal, ldTotal, menOccupied, womenOccupied, ldOccupied, totalOccupied, totalBeds, ordinarioCount, lungodegenzaCount, severities, totalWithSeverity };
     }, [activePatients]);
 
     const getPercentage = (count: number, total: number) => {
@@ -59,7 +70,10 @@ const BedOccupancyStats: React.FC = () => {
             <div className="mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap justify-center items-center gap-x-6 gap-y-2 sm:gap-x-12">
                 <StatItem label="Uomini" occupied={stats.menOccupied} total={stats.menTotal} />
                 <StatItem label="Donne" occupied={stats.womenOccupied} total={stats.womenTotal} />
-                <StatItem label="Lungodegenza" occupied={stats.ldOccupied} total={stats.ldTotal} />
+                <StatItem label="Stanze LD" occupied={stats.ldOccupied} total={stats.ldTotal} />
+                 <div className="border-l border-slate-300 dark:border-slate-600 h-10 self-center"></div>
+                <StatItemSimple label="Ordinario" value={stats.ordinarioCount} />
+                <StatItemSimple label="Lungodegenza" value={stats.lungodegenzaCount} />
                  <div className="border-l border-slate-300 dark:border-slate-600 h-10 self-center"></div>
                  <div className="text-center">
                     <p className="text-base font-semibold text-slate-700 dark:text-slate-300">Totale Occupati</p>

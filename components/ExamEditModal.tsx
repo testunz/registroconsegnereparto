@@ -20,6 +20,7 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({ isOpen, onClose, patient,
         status: exam.status,
         reminderDate: exam.reminderDate || '',
         appointmentDate: exam.appointmentDate || '',
+        notes: exam.notes || '',
     });
 
     useEffect(() => {
@@ -27,10 +28,11 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({ isOpen, onClose, patient,
             status: exam.status,
             reminderDate: exam.reminderDate || '',
             appointmentDate: exam.appointmentDate || '',
+            notes: exam.notes || '',
         });
     }, [exam, isOpen]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
@@ -75,13 +77,29 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({ isOpen, onClose, patient,
         <>
             <Modal isOpen={isOpen} onClose={onClose} title={`Modifica Esame: ${exam.description}`}>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <p className="text-xl font-semibold text-slate-800 dark:text-slate-100">{patient.lastName} {patient.firstName}</p>
+                    <p className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+                        {patient.lastName} {patient.firstName}
+                        {patient.admissionType === 'lungodegenza' && <span className="text-sky-600 dark:text-sky-400"> (LD)</span>}
+                    </p>
                     
                     <div>
                         <label htmlFor="status" className="block text-base font-medium text-slate-700 mb-1 dark:text-slate-300">Stato Esame</label>
                         <select id="status" name="status" value={formData.status} onChange={handleChange} className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base dark:bg-slate-700 dark:border-slate-600 dark:text-white">
                             {Object.entries(EXAM_STATUS_NAMES).map(([key, value]) => <option key={key} value={key as ExamStatus}>{value}</option>)}
                         </select>
+                    </div>
+                    
+                    <div>
+                        <label htmlFor="notes" className="block text-base font-medium text-slate-700 mb-1 dark:text-slate-300">Note Aggiuntive</label>
+                        <textarea
+                            id="notes"
+                            name="notes"
+                            value={formData.notes}
+                            onChange={handleChange}
+                            rows={3}
+                            className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                            placeholder="Aggiungi dettagli o istruzioni..."
+                        />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

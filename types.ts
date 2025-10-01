@@ -23,6 +23,7 @@ export interface ExternalExam {
   appointmentDate: string | null;
   createdAt: number;
   updatedAt?: number;
+  notes?: string;
 }
 
 export interface Patient {

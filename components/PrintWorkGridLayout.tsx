@@ -64,14 +64,21 @@ const PrintWorkGridLayout: React.FC<PrintWorkGridLayoutProps> = ({ patients }) =
                     <td className="border border-black p-1 align-top">
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2px' }}>
                              <span style={{ height: '10px', width: '10px', backgroundColor: severityColor, borderRadius: '50%', marginRight: '4px', display: 'inline-block', flexShrink: 0 }}></span>
-                            <p className="font-bold">{patient.lastName} {patient.firstName}</p>
+                            <p className="font-bold">
+                                {patient.lastName} {patient.firstName}
+                                {patient.admissionType === 'lungodegenza' && ' (LD)'}
+                            </p>
                         </div>
                         <p>{calculateAge(patient.dateOfBirth)} anni ({new Date(patient.dateOfBirth).toLocaleDateString('it-IT')})</p>
                         <p>Ricovero: {new Date(patient.admissionDate).toLocaleDateString('it-IT')} ({lengthOfStay} gg)</p>
                     </td>
                     <td className="border border-black p-1 align-top">{patient.mainDiagnosis}</td>
-                    <td className="border border-black p-1 align-top"></td>
-                    <td className="border border-black p-1 align-top"></td>
+                    <td className="border border-black p-1 align-top">
+                        {/* Empty cell for notes */}
+                    </td>
+                    <td className="border border-black p-1 align-top">
+                        {/* Empty cell for notes */}
+                    </td>
                     </tr>
                 );
             } else {

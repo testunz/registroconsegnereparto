@@ -6,79 +6,28 @@ interface PrintHandoversLayoutProps {
   patients: Patient[];
 }
 
-const calculateLengthOfStay = (admissionDate: string): number => {
-    if (!admissionDate) return 0;
-    const start = new Date(admissionDate);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date();
-    end.setHours(0, 0, 0, 0);
-
-    const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays + 1;
-};
-
-const PatientHandovers: React.FC<{ patient: Patient }> = ({ patient }) => {
-    const activeHandovers = patient.handovers.filter(h => !h.isCompleted);
-    const pendingExams = patient.externalExams.filter(e => e.status !== 'effettuato');
-
-    if (activeHandovers.length === 0 && pendingExams.length === 0) {
-        return null;
-    }
-
-    const severityColor = {
-        rosso: '#ef4444',
-        giallo: '#facc15',
-        verde: '#22c55e',
-    }[patient.severity];
-    
-    const lengthOfStay = calculateLengthOfStay(patient.admissionDate);
-
-    return (
-        <div className="mb-4 p-3 border border-black rounded break-inside-avoid">
-            <h3 className="text-base font-extrabold border-b border-black pb-1 mb-2" style={{ display: 'flex', alignItems: 'center' }}>
-                <span style={{ height: '12px', width: '12px', backgroundColor: severityColor, borderRadius: '50%', marginRight: '8px', flexShrink: 0 }}></span>
-                <span>Letto {patient.bed} - {patient.lastName} {patient.firstName} ({lengthOfStay} gg)</span>
-            </h3>
-            <p className="text-xs mb-2 truncate"><strong>Diagnosi:</strong> {patient.mainDiagnosis}</p>
-            
-            {activeHandovers.length > 0 && (
-                 <div className="mb-2">
-                    <h4 className="text-sm font-bold">Consegne Attive:</h4>
-                     <ul className="list-disc pl-5 text-xs space-y-1">
-                        {activeHandovers.map(h => (
-                            <li key={h.id}>
-                                {h.text}
-                                {h.scheduledAt && <span className="font-semibold ml-2"> (Scad. {new Date(h.scheduledAt).toLocaleString('it-IT', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})})</span>}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-
-            {pendingExams.length > 0 && (
-                <div>
-                    <h4 className="text-sm font-bold">Esami/Consulenze in Sospeso:</h4>
-                    <ul className="list-disc pl-5 text-xs space-y-1">
-                        {pendingExams.map(ex => (
-                            <li key={ex.id}>
-                                {ex.description} - <strong>{EXAM_STATUS_NAMES[ex.status]}</strong>
-                                {ex.appointmentDate && <span className="font-semibold ml-2"> (App. {new Date(ex.appointmentDate).toLocaleDateString('it-IT')})</span>}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-        </div>
-    );
-};
-
 const PrintHandoversLayout: React.FC<PrintHandoversLayoutProps> = ({ patients }) => {
-  const sortedPatients = [...patients].sort((a, b) => {
-    const bedA = parseInt(a.bed.replace(/\D/g, ''), 10);
-    const bedB = parseInt(b.bed.replace(/\D/g, ''), 10);
+  const allPendingHandovers = patients.flatMap(patient =>
+    patient.handovers
+      .filter(h => !h.isCompleted)
+      .map(handover => ({ patient, handover }))
+  ).sort((a, b) => {
+    const timeA = a.handover.scheduledAt || a.handover.createdAt;
+    const timeB = b.handover.scheduledAt || b.handover.createdAt;
+    return timeA - timeB;
+  });
+
+  const allPendingExams = patients.flatMap(patient =>
+    patient.externalExams
+      .filter(ex => ex.status !== 'effettuato')
+      .map(exam => ({ patient, exam }))
+  ).sort((a, b) => {
+    const dateA = a.exam.appointmentDate || a.exam.reminderDate || '9999-12-31';
+    const dateB = b.exam.appointmentDate || b.exam.reminderDate || '9999-12-31';
+    if (dateA < dateB) return -1;
+    if (dateA > dateB) return 1;
+    const bedA = parseInt(a.patient.bed.replace(/\D/g, ''));
+    const bedB = parseInt(b.patient.bed.replace(/\D/g, ''));
     return bedA - bedB;
   });
 
@@ -91,20 +40,90 @@ const PrintHandoversLayout: React.FC<PrintHandoversLayoutProps> = ({ patients })
         <h1 className="text-2xl font-extrabold">Report Consegne e Attività</h1>
         <p className="text-base">Report del {new Date().toLocaleString('it-IT')}</p>
       </header>
-      <div className="columns-2 gap-4">
-        {sortedPatients.map(patient => (
-          <PatientHandovers key={patient.id} patient={patient} />
-        ))}
-      </div>
 
-       {freeBeds.length > 0 && (
-            <div className="mt-6 pt-4 border-t-2 border-black break-before-page sm:break-before-auto break-inside-avoid">
-                <h2 className="text-xl font-extrabold mb-2">Letti Liberi ({freeBeds.length})</h2>
-                <p className="text-base" style={{ columns: 4, columnGap: '1rem' }}>
-                {freeBeds.join(', ')}
-                </p>
-            </div>
+      {/* Sezione Consegne */}
+      <section className="mb-8">
+        <h2 className="text-xl font-bold border-b border-black pb-1 mb-2">Consegne Cliniche da Eseguire</h2>
+        {allPendingHandovers.length > 0 ? (
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-100">
+                <th className="border border-black p-1 text-left w-12">Letto</th>
+                <th className="border border-black p-1 text-left w-40">Paziente</th>
+                <th className="border border-black p-1 text-left">Descrizione Consegna</th>
+                <th className="border border-black p-1 text-left w-40">Scadenza</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allPendingHandovers.map(({ patient, handover }) => (
+                <tr key={handover.id} className="break-inside-avoid">
+                  <td className="border border-black p-1 font-bold text-center">{patient.bed}</td>
+                  <td className="border border-black p-1 font-semibold">
+                    {patient.lastName} {patient.firstName}
+                    {patient.admissionType === 'lungodegenza' && ' (LD)'}
+                  </td>
+                  <td className="border border-black p-1">{handover.text}</td>
+                  <td className="border border-black p-1">
+                    {handover.scheduledAt 
+                      ? `Programmata: ${new Date(handover.scheduledAt).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`
+                      : `Inserita: ${new Date(handover.createdAt).toLocaleDateString('it-IT')}`
+                    }
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-center text-gray-500 py-2">Nessuna consegna clinica in sospeso.</p>
         )}
+      </section>
+
+      {/* Sezione Attività (Esami/Consulenze) */}
+      <section className="mb-8 break-before-page">
+        <h2 className="text-xl font-bold border-b border-black pb-1 mb-2">Esami e Consulenze in Sospeso</h2>
+        {allPendingExams.length > 0 ? (
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-100">
+                <th className="border border-black p-1 text-left w-12">Letto</th>
+                <th className="border border-black p-1 text-left w-40">Paziente</th>
+                <th className="border border-black p-1 text-left">Descrizione Esame/Consulenza</th>
+                <th className="border border-black p-1 text-left w-40">Dettagli Scadenza</th>
+                <th className="border border-black p-1 text-left w-24">Stato</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allPendingExams.map(({ patient, exam }) => (
+                <tr key={exam.id} className="break-inside-avoid">
+                  <td className="border border-black p-1 font-bold text-center">{patient.bed}</td>
+                  <td className="border border-black p-1 font-semibold">
+                    {patient.lastName} {patient.firstName}
+                    {patient.admissionType === 'lungodegenza' && ' (LD)'}
+                  </td>
+                  <td className="border border-black p-1">{exam.description}</td>
+                  <td className="border border-black p-1">
+                    {exam.appointmentDate && <span className="font-bold">Appuntamento: {new Date(exam.appointmentDate).toLocaleDateString('it-IT')}</span>}
+                    {!exam.appointmentDate && exam.reminderDate && <span>Promemoria: {new Date(exam.reminderDate).toLocaleDateString('it-IT')}</span>}
+                  </td>
+                  <td className="border border-black p-1 font-bold">{EXAM_STATUS_NAMES[exam.status]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-center text-gray-500 py-2">Nessun esame o consulenza in sospeso.</p>
+        )}
+      </section>
+
+      {/* Sezione Letti Liberi */}
+      {freeBeds.length > 0 && (
+        <section className="pt-4 border-t-2 border-black break-inside-avoid">
+          <h2 className="text-lg font-extrabold mb-2">Letti Liberi ({freeBeds.length})</h2>
+          <p className="text-base" style={{ columns: 5, columnGap: '1rem' }}>
+            {freeBeds.join(', ')}
+          </p>
+        </section>
+      )}
     </div>
   );
 };

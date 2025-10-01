@@ -35,7 +35,10 @@ const PrintLayout = React.forwardRef<HTMLDivElement, PrintLayoutProps>(({ patien
         <div ref={ref} className="p-10 font-sans bg-white text-black">
             <header className="mb-8 border-b-2 border-black pb-4">
                 <h1 className="text-3xl font-extrabold">Report Clinico Paziente</h1>
-                <h2 className="text-2xl font-semibold mt-1">{patient.lastName} {patient.firstName}</h2>
+                <h2 className="text-2xl font-semibold mt-1">
+                    {patient.lastName} {patient.firstName}
+                    {patient.admissionType === 'lungodegenza' && ' (LD)'}
+                </h2>
             </header>
 
             <div className="grid grid-cols-3 gap-8">
@@ -68,6 +71,9 @@ const PrintLayout = React.forwardRef<HTMLDivElement, PrintLayoutProps>(({ patien
                                     <li key={ex.id}>
                                         <span className="font-semibold">{ex.description}</span> ({EXAM_CATEGORIES[ex.category]}) - <strong>{EXAM_STATUS_NAMES[ex.status]}</strong>
                                         {ex.appointmentDate && ` il ${new Date(ex.appointmentDate).toLocaleDateString('it-IT')}`}
+                                        {ex.notes && (
+                                            <p className="text-xs italic pl-4 mt-1">Nota: {ex.notes}</p>
+                                        )}
                                     </li>
                                 ))}
                             </ul>

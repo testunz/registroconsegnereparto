@@ -46,7 +46,8 @@ const createRealPatients = (): Patient[] => {
                 status: 'prenotato',
                 reminderDate: null,
                 appointmentDate: '2025-09-29',
-                createdAt: new Date('2025-09-27').getTime()
+                createdAt: new Date('2025-09-27').getTime(),
+                notes: 'Eseguire in 2 proiezioni, senza mdc.',
             }],
         },
         {

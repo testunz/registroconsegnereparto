@@ -159,7 +159,10 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
                   onClick={() => !isArchived && setIsSeverityModalOpen(true)}
                   title={!isArchived ? "Clicca per modificare la gravità" : ""}
                 >
-                    <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-800 dark:text-slate-100">{patient.lastName} {patient.firstName}</h2>
+                    <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-800 dark:text-slate-100">
+                        {patient.lastName} {patient.firstName}
+                        {patient.admissionType === 'lungodegenza' && <span className="text-2xl lg:text-3xl text-sky-600 dark:text-sky-400 font-semibold"> (LD)</span>}
+                    </h2>
                     <p className="text-lg text-slate-500 mt-1 dark:text-slate-400">
                         <span className="font-semibold">Letto:</span> {patient.bed || 'N/D'} | <span className="font-semibold">Ricovero:</span> {patient.admissionType} | <span className="font-bold">{SEVERITY_NAMES[patient.severity]}</span>
                          {isArchived && patient.dischargeType && ` | Dimesso: ${DISCHARGE_TYPE_NAMES[patient.dischargeType]}`}
@@ -260,6 +263,11 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
                                 <div className="flex justify-between items-start gap-4">
                                     <div className="flex-grow">
                                         <p className="font-semibold text-slate-800 dark:text-slate-200">{ex.description}</p>
+                                        {ex.notes && (
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 pl-4 border-l-2 border-slate-200 dark:border-slate-600 italic">
+                                                {ex.notes}
+                                            </p>
+                                        )}
                                         <p className="text-sm text-slate-500 dark:text-slate-400">{EXAM_CATEGORIES[ex.category]}</p>
                                         
                                         <div className="mt-2 text-sm space-y-1">
@@ -300,7 +308,7 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
       <Modal isOpen={isDischargeModalOpen} onClose={() => setIsDischargeModalOpen(false)} title="Conferma Dimissione">
         <div className="space-y-6">
             <p className="text-lg text-slate-600 dark:text-slate-300">
-            Sei sicuro di voler dimettere il paziente <strong>{patient.lastName} {patient.firstName}</strong>?
+            Sei sicuro di voler dimettere il paziente <strong>{patient.lastName} {patient.firstName}{patient.admissionType === 'lungodegenza' && ' (LD)'}</strong>?
             </p>
             <div>
             <label htmlFor="dischargeType" className="block text-base font-medium text-slate-700 mb-1 dark:text-slate-300">Esito della dimissione</label>

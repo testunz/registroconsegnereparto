@@ -21,7 +21,10 @@ const HandoverItem: React.FC<{ handover: Handover; patient: Patient }> = ({ hand
                 />
                 <div className="flex-grow">
                     <p className={`text-slate-800 whitespace-pre-wrap dark:text-slate-200 ${handover.isCompleted ? 'line-through' : ''}`}>
-                        <span className="font-bold">{patient.lastName} {patient.firstName} (Letto {patient.bed}): </span>
+                        <span className="font-bold">
+                            {patient.lastName} {patient.firstName}
+                            {patient.admissionType === 'lungodegenza' && <span className="text-sky-600 dark:text-sky-400"> (LD)</span>} (Letto {patient.bed}):{' '}
+                        </span>
                         {handover.text}
                     </p>
                     <div className="text-sm text-slate-500 text-right mt-1 dark:text-slate-400">

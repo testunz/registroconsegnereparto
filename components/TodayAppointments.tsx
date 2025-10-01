@@ -53,7 +53,10 @@ const TodayAppointments: React.FC = () => {
                     {pendingExams.map(({ patient, exam }) => (
                          <div key={exam.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 flex justify-between items-start">
                             <div className="flex-grow mr-2">
-                               <p className="font-bold text-slate-800 dark:text-slate-100">{patient.lastName} {patient.firstName} (Letto {patient.bed})</p>
+                               <p className="font-bold text-slate-800 dark:text-slate-100">
+                                   {patient.lastName} {patient.firstName}
+                                   {patient.admissionType === 'lungodegenza' && <span className="text-sky-600 dark:text-sky-400"> (LD)</span>} (Letto {patient.bed})
+                                </p>
                                <p className="text-base text-slate-600 dark:text-slate-300">{exam.description}</p>
                                {exam.appointmentDate && (
                                    <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
