@@ -43,6 +43,18 @@ export const SEVERITY_COLORS: Record<Severity, string> = {
   rosso: 'border-severity-rosso',
 };
 
+export const SEVERITY_BG_COLORS: Record<Severity, string> = {
+  verde: 'bg-green-100 dark:bg-green-900/50',
+  giallo: 'bg-yellow-100 dark:bg-yellow-900/50',
+  rosso: 'bg-red-100 dark:bg-red-900/50',
+};
+
+export const SEVERITY_TEXT_COLORS: Record<Severity, string> = {
+  verde: 'text-green-600 dark:text-green-400',
+  giallo: 'text-yellow-600 dark:text-yellow-400',
+  rosso: 'text-red-600 dark:text-red-400',
+};
+
 export const SEVERITY_NAMES: Record<Severity, string> = {
   verde: 'Stabile',
   giallo: 'Condizioni Moderate',
@@ -67,3 +79,22 @@ export const EXAM_CATEGORIES: Record<string, string> = {
   radiologia: 'Radiologia',
   consulenze: 'Consulenze',
 };
+
+export const USERS = [
+  'CAROLEO B.',
+  'ALCANTARA R.',
+  'BERTUCCI G.',
+  'CARUSO M.',
+  'CASTILLO B.',
+  'COLINA G.',
+  'DIMASI C.',
+  'FIORINO G.',
+  'IACOPINO R.',
+  'MARRA F.',
+  'MITRA M.',
+  'PEDACE E.',
+];
+
+export const ADMIN_USERS = ['CAROLEO B.', 'BERTUCCI G.'];
+
+export const RECOVERY_KEY = 'MI_SOVERATO_2025';

@@ -30,7 +30,7 @@ const BedMap: React.FC<BedMapProps> = ({ patients, onSelectPatient, onAddPatient
   return (
     <div className="space-y-8">
       {ROOM_LAYOUT.map((section, sectionIndex) => (
-        <div key={`section-${sectionIndex}`} className="flex flex-wrap items-start -m-3">
+        <div key={`section-${sectionIndex}`} className="flex flex-wrap items-start justify-center -m-3">
           {section.groups.map((group, groupIndex) => (
             <div key={`group-${groupIndex}`} className="p-3">
               <div className="bg-slate-200/40 dark:bg-slate-800/30 p-4 rounded-xl">

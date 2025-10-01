@@ -1,16 +1,33 @@
-import { Patient, Gender, WardNote } from '../types';
+import { Patient, Gender, WardNote, AppDatabase, Severity, AdmissionType, Handover, ExternalExam, ExamCategory, ExamStatus } from '../types';
+import { addBackup } from './backupService';
+import { ALL_BEDS, BEDS } from '../constants';
+
 
 const DB_KEY = 'medicina-interna-soverato-db-v4';
-
-interface AppDatabase {
-  patients: Patient[];
-  wardNotes: WardNote[];
-}
 
 const createRealPatients = (): Patient[] => {
     const reportDate = new Date('2025-09-29').getTime();
 
-    const patients: Patient[] = [
+    // Funzioni di utilità per la generazione casuale
+    const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+    const getRandomDate = (start: Date, end: Date): Date => new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    const toISODate = (date: Date) => date.toISOString().slice(0, 10);
+
+    // Dati di esempio per la generazione
+    const MALE_NAMES = ['Mario', 'Carlo', 'Francesco', 'Alessandro', 'Davide', 'Simone', 'Marco', 'Luca', 'Paolo'];
+    const FEMALE_NAMES = ['Elisa', 'Martina', 'Sara', 'Alessia', 'Federica', 'Veronica', 'Roberta', 'Simona', 'Laura'];
+    const LAST_NAMES = ['Ferrari', 'Russo', 'Colombo', 'De Luca', 'Barbieri', 'Fontana', 'Santoro', 'Marchetti', 'Galli'];
+    const DIAGNOSES = ['Polmonite nosocomiale', 'Insufficienza cardiaca scompensata', 'Embolia polmonare', 'Sepsi da IVU', 'Colecistite acuta', 'Diverticolite', 'Ictus ischemico acuto', 'Sindrome coronarica acuta'];
+    const SEVERITIES: Severity[] = ['verde', 'giallo', 'rosso'];
+
+    const HANDOVER_TEXTS = ['Monitorare diuresi nelle 24h', 'Controllo parametri vitali ogni 4 ore', 'Attendere referto emocolture', 'Valutare introduzione di terapia marziale', 'Richiedere visita fisiatrica per mobilizzazione', 'Pianificare colloquio con i familiari', 'Eseguire ECG di controllo domattina'];
+    const LAB_EXAMS = ['Emocromo con formula', 'PCR, Procalcitonina', 'Funzionalità renale ed elettroliti', 'Enzimi cardiaci', 'Profilo epatico completo', 'Esame urine completo', 'Emogasanalisi arteriosa'];
+    const RADIO_EXAMS = ['Ecografia addome completo', 'TC Torace con mdc', 'Doppler arti inferiori', 'Rx diretta addome', 'Colangio-RMN', 'Rx Torace'];
+    const CONSULTATIONS = ['Consulenza cardiologica', 'Consulenza neurologica', 'Consulenza chirurgica', 'Valutazione nutrizionistica', 'Consulenza infettivologica'];
+    const EXAM_STATUSES: ExamStatus[] = ['da_richiedere', 'prenotato', 'effettuato'];
+
+
+    let patients: Patient[] = [
         // UOMINI
         {
             id: crypto.randomUUID(),
@@ -76,28 +93,6 @@ const createRealPatients = (): Patient[] => {
             severity: 'rosso', status: 'active', createdAt: new Date('2025-09-27').getTime(),
             lastUpdated: reportDate, handovers: [{ id: crypto.randomUUID(), text: 'Eseguire TC addome per sospetta diverticolite', createdAt: reportDate, isCompleted: false }], externalExams: [],
         },
-        {
-            id: crypto.randomUUID(),
-            firstName: 'Franco', lastName: 'Galli', dateOfBirth: '1944-08-01',
-            admissionDate: '2025-09-21', gender: 'M', bed: '1',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Scompenso cardiaco acuto su cronico, insufficienza renale',
-            history: 'Pregresso infarto miocardico, ipertensione arteriosa, vasculopatia periferica.',
-            clinicalNotes: 'Dispnoico a riposo, edemi declivi. In terapia diuretica.',
-            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-21').getTime(),
-            lastUpdated: reportDate, handovers: [], externalExams: [],
-        },
-        {
-            id: crypto.randomUUID(),
-            firstName: 'Roberto', lastName: 'Ferrara', dateOfBirth: '1946-03-22',
-            admissionDate: '2025-08-15', gender: 'M', bed: 'LDU2',
-            admissionType: 'lungodegenza',
-            mainDiagnosis: 'Anemia severa da rivalutare',
-            history: 'Demenza, ipertensione arteriosa, cachessia, cardiopatia ischemica.',
-            clinicalNotes: 'In LD dal 25-08-2025. Trasfusioni periodiche.',
-            severity: 'giallo', status: 'active', createdAt: new Date('2025-08-15').getTime(),
-            lastUpdated: reportDate, handovers: [{ id: crypto.randomUUID(), text: 'Programmare dimissione protetta con attivazione ADI', createdAt: reportDate, isCompleted: false }], externalExams: [],
-        },
         // DONNE
         {
             id: crypto.randomUUID(),
@@ -143,93 +138,100 @@ const createRealPatients = (): Patient[] => {
             severity: 'giallo', status: 'active', createdAt: new Date('2025-09-19').getTime(),
             lastUpdated: reportDate, handovers: [{ id: crypto.randomUUID(), text: 'Controllare esami urine e PCR a 48h', createdAt: reportDate, isCompleted: true }], externalExams: [],
         },
-        {
-            id: crypto.randomUUID(),
-            firstName: 'Rosa', lastName: 'Colombo', dateOfBirth: '1955-07-07',
-            admissionDate: '2025-09-26', gender: 'F', bed: '16',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Sospetta endocardite batterica in paziente febbrile',
-            history: 'Ipertensione arteriosa, obesità, pregresso TEP, prolasso mitralico.',
-            clinicalNotes: 'Eseguite emocolture. In attesa di ecocardiogramma transesofageo.',
-            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-26').getTime(),
-            lastUpdated: reportDate, handovers: [], externalExams: [],
-        },
-        {
-            id: crypto.randomUUID(),
-            firstName: 'Francesca', lastName: 'Gallo', dateOfBirth: '1939-02-14',
-            admissionDate: '2025-09-22', gender: 'F', bed: '15',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Insufficienza respiratoria acuta su BPCO',
-            history: 'Vasculopatia cerebrale cronica, FA permanente, Diabete tipo II, IRC, portatrice di pacemaker, K vescica operato.',
-            clinicalNotes: 'In ossigenoterapia ad alti flussi. Eseguita emogasanalisi.',
-            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-22').getTime(),
-            lastUpdated: reportDate, handovers: [], externalExams: [],
-        },
-        {
-            id: crypto.randomUUID(),
-            firstName: 'Elena', lastName: 'Rinaldi', dateOfBirth: '1961-10-01',
-            admissionDate: '2025-09-25', gender: 'F', bed: '14',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Febbre di origine sconosciuta',
-            history: 'Tiroidite di Hashimoto in terapia sostitutiva, sindrome del colon irritabile. Riferisce intolleranza a FANS.',
-            clinicalNotes: 'Eseguiti esami di primo livello, negativi. In programma TC total body.',
-            severity: 'verde', status: 'active', createdAt: new Date('2025-09-25').getTime(),
-            lastUpdated: reportDate, handovers: [], externalExams: [],
-        },
-        {
-            id: crypto.randomUUID(),
-            firstName: 'Laura', lastName: 'Marino', dateOfBirth: '1956-01-28',
-            admissionDate: '2025-09-23', gender: 'F', bed: '13',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Anemizzazione severa in paziente con mieloma',
-            history: 'Trasferita da Ematologia. Mieloma multiplo in trattamento. Decadimento cognitivo lieve. Allergia a contrasto iodato.',
-            clinicalNotes: 'Programmata trasfusione di emazie concentrate.',
-            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-23').getTime(),
-            lastUpdated: reportDate, handovers: [], externalExams: [],
-        },
-        {
-            id: crypto.randomUUID(),
-            firstName: 'Isabella', lastName: 'Martini', dateOfBirth: '1949-04-30',
-            admissionDate: '2025-09-24', gender: 'F', bed: '12',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Ittero ostruttivo da definire',
-            history: 'Ipertensione arteriosa, colecistectomia pregressa per via laparoscopica.',
-            clinicalNotes: 'Eseguita ecografia addome che mostra dilatazione delle vie biliari. In programma Colangio-RMN.',
-            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-24').getTime(),
-            lastUpdated: reportDate, handovers: [], externalExams: [],
-        },
-        {
-            id: crypto.randomUUID(),
-            firstName: 'Valentina', lastName: 'Costa', dateOfBirth: '1965-11-18',
-            admissionDate: '2025-09-26', gender: 'F', bed: '11',
-            admissionType: 'ordinario',
-            mainDiagnosis: 'Palpitazioni, sospetta aritmia',
-            history: 'Ipertensione arteriosa in terapia. Nessuna cardiopatia nota.',
-            clinicalNotes: 'In monitoraggio cardiaco continuo. Richiesto Holter ECG 24h e consulenza cardiologica.',
-            severity: 'giallo', status: 'active', createdAt: new Date('2025-09-26').getTime(),
-            lastUpdated: reportDate, handovers: [], externalExams: [],
-        },
-        {
-            id: crypto.randomUUID(),
-            firstName: 'Chiara', lastName: 'Lombardi', dateOfBirth: '1947-10-05',
-            admissionDate: '2025-09-25', gender: 'F', bed: 'LDD2',
-            admissionType: 'lungodegenza',
-            mainDiagnosis: 'Riabilitazione post-frattura femore in paziente con insufficienza renale',
-            history: 'Ipertensione arteriosa, IRC stadio III, pregressa frattura femore destro trattata chirurgicamente.',
-            clinicalNotes: 'Necessita di supporto per la mobilizzazione e fisioterapia.',
-            severity: 'rosso', status: 'active', createdAt: new Date('2025-09-25').getTime(),
-            lastUpdated: reportDate, handovers: [{ id: crypto.randomUUID(), text: 'Programmare ciclo di FKT. Controllare periodicamente la funzione renale.', createdAt: new Date('2025-09-29T08:00:00').getTime(), scheduledAt: new Date('2025-09-29T14:00:00').getTime(), isCompleted: false }], externalExams: [],
-        },
     ];
 
-  return patients;
+    const occupiedBeds = new Set(patients.map(p => p.bed));
+
+    // Riempi i letti vuoti
+    ALL_BEDS.forEach(bed => {
+        if (!occupiedBeds.has(bed)) {
+            const isLduOrLdd = bed.startsWith('LD');
+            const gender: Gender = BEDS.men.includes(bed) || BEDS.ldu.includes(bed) ? 'M' : 'F';
+            
+            const newPatient: Patient = {
+                id: crypto.randomUUID(),
+                firstName: getRandomElement(gender === 'M' ? MALE_NAMES : FEMALE_NAMES),
+                lastName: getRandomElement(LAST_NAMES),
+                dateOfBirth: toISODate(getRandomDate(new Date('1930-01-01'), new Date('1965-01-01'))),
+                admissionDate: toISODate(getRandomDate(new Date('2025-09-15'), new Date('2025-09-28'))),
+                gender,
+                bed,
+                admissionType: isLduOrLdd ? 'lungodegenza' : 'ordinario',
+                mainDiagnosis: getRandomElement(DIAGNOSES),
+                history: 'Anamnesi non ancora raccolta.',
+                clinicalNotes: 'Condizioni al momento stabili.',
+                severity: getRandomElement(SEVERITIES),
+                status: 'active',
+                createdAt: new Date().getTime(),
+                lastUpdated: new Date().getTime(),
+                handovers: [],
+                externalExams: [],
+            };
+            patients.push(newPatient);
+        }
+    });
+
+    // Aggiungi consegne ed esami a tutti i pazienti
+    patients.forEach(p => {
+        // Pulisci le attività esistenti per evitare duplicati al riavvio
+        p.handovers = [];
+        p.externalExams = [];
+
+        // Aggiungi 1-3 consegne
+        for (let i = 0; i < Math.floor(Math.random() * 3) + 1; i++) {
+            const isCompleted = Math.random() > 0.6;
+            const hasSchedule = Math.random() > 0.5;
+            p.handovers.push({
+                id: crypto.randomUUID(),
+                text: getRandomElement(HANDOVER_TEXTS),
+                createdAt: getRandomDate(new Date(p.admissionDate), new Date()).getTime(),
+                isCompleted,
+                scheduledAt: hasSchedule ? getRandomDate(new Date(), new Date(new Date().getTime() + 5 * 24 * 60 * 60 * 1000)).getTime() : null,
+            });
+        }
+        
+        // Aggiungi 2-4 esami
+        for (let i = 0; i < Math.floor(Math.random() * 3) + 2; i++) {
+            const category = getRandomElement<ExamCategory>(['laboratorio', 'radiologia', 'consulenze']);
+            let description = '';
+            switch (category) {
+                case 'laboratorio': description = getRandomElement(LAB_EXAMS); break;
+                case 'radiologia': description = getRandomElement(RADIO_EXAMS); break;
+                case 'consulenze': description = getRandomElement(CONSULTATIONS); break;
+            }
+
+            const status = getRandomElement(EXAM_STATUSES);
+            let appointmentDate: string | null = null;
+            let reminderDate: string | null = null;
+
+            if (status === 'prenotato') {
+                appointmentDate = toISODate(getRandomDate(new Date(), new Date(new Date().getTime() + 10 * 24 * 60 * 60 * 1000)));
+            } else if (status === 'da_richiedere') {
+                 if(Math.random() > 0.5) reminderDate = toISODate(getRandomDate(new Date(), new Date(new Date().getTime() + 5 * 24 * 60 * 60 * 1000)));
+            }
+            
+            p.externalExams.push({
+                id: crypto.randomUUID(),
+                category,
+                description,
+                status,
+                appointmentDate,
+                reminderDate,
+                createdAt: getRandomDate(new Date(p.admissionDate), new Date()).getTime(),
+            });
+        }
+    });
+
+    return patients;
 };
+
 
 const initializeDatabase = (): AppDatabase => {
   const db: AppDatabase = {
     patients: createRealPatients(),
     wardNotes: [],
   };
+  // Don't save backup on first initialization
   localStorage.setItem(DB_KEY, JSON.stringify(db));
   return db;
 };
@@ -256,14 +258,24 @@ export const getDb = (): AppDatabase => {
   }
 };
 
-export const saveDb = (db: AppDatabase): void => {
+export const saveDb = (db: AppDatabase, user: string): void => {
   try {
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    const dbString = JSON.stringify(db);
+    localStorage.setItem(DB_KEY, dbString);
+    // Fire-and-forget backup call with user
+    addBackup(dbString, user);
   } catch (error)
     {
     console.error("Failed to save data to localStorage", error);
   }
 };
+
+export const resetDb = async (user: string): Promise<void> => {
+    const emptyDb: AppDatabase = { patients: [], wardNotes: [] };
+    // This action will be backed up automatically by saveDb, preserving the history.
+    saveDb(emptyDb, user);
+};
+
 
 export const exportData = (): void => {
   const db = getDb();
@@ -278,7 +290,7 @@ export const exportData = (): void => {
   linkElement.click();
 };
 
-export const importData = (file: File, onComplete: (success: boolean, message: string) => void): void => {
+export const importData = (file: File, user: string, onComplete: (success: boolean, message: string) => void): void => {
   const reader = new FileReader();
   reader.onload = (event) => {
     try {
@@ -311,7 +323,7 @@ export const importData = (file: File, onComplete: (success: boolean, message: s
       });
       currentDb.wardNotes = Array.from(noteMap.values());
 
-      saveDb(currentDb);
+      saveDb(currentDb, user); // User is passed in for audit trail
       onComplete(true, "Dati importati e uniti con successo.");
     } catch (error) {
       console.error("Failed to import data", error);

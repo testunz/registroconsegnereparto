@@ -1,6 +1,8 @@
 import React from 'react';
 import { usePatients } from '../hooks/usePatients';
+// Fix: Import ExamStatus from types.ts, not constants.ts
 import { EXAM_STATUS_NAMES } from '../constants';
+import { ExamStatus } from '../types';
 
 const isPast = (dateStr: string | null) => {
     if (!dateStr) return false;
@@ -10,6 +12,19 @@ const isPast = (dateStr: string | null) => {
     d.setHours(0, 0, 0, 0);
     return d.getTime() < today.getTime();
 };
+
+const getStatusBadgeColor = (status: ExamStatus) => {
+    switch(status) {
+        case 'da_richiedere':
+            return 'bg-amber-200 text-amber-800 dark:bg-amber-800/50 dark:text-amber-200';
+        case 'prenotato':
+            return 'bg-blue-200 text-blue-800 dark:bg-blue-800/50 dark:text-blue-200';
+        case 'effettuato':
+             return 'bg-green-200 text-green-800 dark:bg-green-800/50 dark:text-green-200';
+        default:
+            return 'bg-slate-200 text-slate-800 dark:bg-slate-600 dark:text-slate-200';
+    }
+}
 
 const TodayAppointments: React.FC = () => {
     const { activePatients } = usePatients();
@@ -51,7 +66,7 @@ const TodayAppointments: React.FC = () => {
                                    </p>
                                )}
                             </div>
-                            <span className={`font-semibold px-2 py-0.5 rounded-full text-sm flex-shrink-0`}>{EXAM_STATUS_NAMES[exam.status]}</span>
+                            <span className={`font-semibold px-2 py-0.5 rounded-full text-sm flex-shrink-0 ${getStatusBadgeColor(exam.status)}`}>{EXAM_STATUS_NAMES[exam.status]}</span>
                          </div>
                     ))}
                 </div>

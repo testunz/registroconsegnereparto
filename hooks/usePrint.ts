@@ -1,7 +1,13 @@
 import React, { useCallback } from 'react';
 
+interface PrintOptions {
+    documentTitle?: string;
+    layout?: 'portrait' | 'landscape';
+}
+
 export const usePrint = (contentRef: React.RefObject<HTMLElement>) => {
-  const handlePrint = useCallback(() => {
+  const handlePrint = useCallback((options: PrintOptions = {}) => {
+    const { documentTitle = 'Stampa Report', layout = 'portrait' } = options;
     const content = contentRef.current;
     if (!content) {
       console.error("Print content not found.");
@@ -11,15 +17,13 @@ export const usePrint = (contentRef: React.RefObject<HTMLElement>) => {
     const printWindow = window.open('', '', 'height=800,width=1200');
 
     if (printWindow) {
-      printWindow.document.write('<html><head><title>Stampa Report</title>');
+      printWindow.document.write(`<html><head><title>${documentTitle}</title>`);
       
-      // Copy all link and style tags
       const styles = document.head.querySelectorAll('link, style');
       styles.forEach(style => {
         printWindow.document.head.appendChild(style.cloneNode(true));
       });
       
-      // Copy Tailwind script and its config
       const scripts = document.head.querySelectorAll('script');
        scripts.forEach(script => {
         if (script.src.includes('tailwindcss') || script.innerHTML.includes('tailwind.config')) {
@@ -32,7 +36,22 @@ export const usePrint = (contentRef: React.RefObject<HTMLElement>) => {
            printWindow.document.head.appendChild(newScript);
         }
       });
-
+      
+      // Add custom styles for printing, including layout
+      const printStyles = printWindow.document.createElement('style');
+      printStyles.innerHTML = `
+        @media print {
+          @page {
+            size: ${layout};
+            margin: 1.5cm;
+          }
+          body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+        }
+      `;
+      printWindow.document.head.appendChild(printStyles);
 
       printWindow.document.write('</head><body>');
       printWindow.document.write(content.innerHTML);

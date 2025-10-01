@@ -5,6 +5,7 @@ import DailyHandovers from './DailyHandovers';
 import TodayAppointments from './TodayAppointments';
 import UrgentNotesDisplay from './UrgentNotesDisplay';
 import WardNotesInput from './WardNotesInput';
+import TodayExamsReminder from './TodayExamsReminder';
 
 interface DashboardProps {
   onSelectPatient: (patientId: string) => void;
@@ -17,6 +18,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient, onAddPatient }) 
   return (
     <div className="animate-fade-in space-y-8">
       <UrgentNotesDisplay />
+      <TodayExamsReminder onSelectPatient={onSelectPatient} />
       <BedMap 
         patients={activePatients} 
         onSelectPatient={onSelectPatient} 

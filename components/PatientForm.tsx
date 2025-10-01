@@ -105,15 +105,17 @@ const PatientForm: React.FC<PatientFormProps> = ({ isOpen, onClose, patientToEdi
     onClose();
   };
 
-  const occupiedBeds = useMemo(() => activePatients.map(p => p.bed), [activePatients]);
-
-  const availableBeds = useMemo(() => {
-      const freeBeds = ALL_BEDS.filter(b => !occupiedBeds.includes(b));
-      let bedsToShow = freeBeds;
-      if (patientToEdit) {
-          bedsToShow = [patientToEdit.bed, ...freeBeds];
+  const occupiedBedsMap = useMemo(() => {
+    return activePatients.reduce((acc, p) => {
+      if (p.bed && (!patientToEdit || p.id !== patientToEdit.id)) {
+        acc.set(p.bed, `${p.lastName}`);
       }
-      return bedsToShow.sort((a, b) => {
+      return acc;
+    }, new Map<string, string>());
+  }, [activePatients, patientToEdit]);
+
+  const allSortedBeds = useMemo(() => {
+      return [...ALL_BEDS].sort((a, b) => {
           const numA = parseInt(a.replace(/[^0-9]/g, ''), 10);
           const numB = parseInt(b.replace(/[^0-9]/g, ''), 10);
           const strA = a.replace(/[0-9]/g, '');
@@ -123,7 +125,7 @@ const PatientForm: React.FC<PatientFormProps> = ({ isOpen, onClose, patientToEdi
           if(strA > strB) return -1;
           return numA - numB;
       });
-  }, [occupiedBeds, patientToEdit]);
+  }, []);
 
 
   return (
@@ -139,7 +141,14 @@ const PatientForm: React.FC<PatientFormProps> = ({ isOpen, onClose, patientToEdi
             </InputField>
             <InputField label="Letto" name="bed" value={formData.bed} onChange={handleChange} required>
                 <option value="">Seleziona un letto</option>
-                {availableBeds.map(b => <option key={b} value={b}>{b}</option>)}
+                {allSortedBeds.map(b => {
+                    const occupantName = occupiedBedsMap.get(b);
+                    return (
+                        <option key={b} value={b}>
+                            {b}{occupantName ? ` (Occupato: ${occupantName})` : ''}
+                        </option>
+                    )
+                })}
             </InputField>
             <InputField label="Tipo Ricovero" name="admissionType" value={formData.admissionType} onChange={handleChange}>
                 <option value="ordinario">Ordinario</option><option value="lungodegenza">Lungodegenza</option>

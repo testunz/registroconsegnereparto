@@ -13,7 +13,24 @@ const InfoItem: React.FC<{ label: string; value?: string | null }> = ({ label, v
     </div>
 );
 
+const calculateLengthOfStay = (admissionDate: string, status: 'active' | 'discharged', lastUpdated: number): number => {
+    if (!admissionDate) return 0;
+    const start = new Date(admissionDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = status === 'discharged' ? new Date(lastUpdated) : new Date();
+    end.setHours(0, 0, 0, 0);
+
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays + 1;
+};
+
 const PrintLayout = React.forwardRef<HTMLDivElement, PrintLayoutProps>(({ patient }, ref) => {
+    const lengthOfStay = calculateLengthOfStay(patient.admissionDate, patient.status, patient.lastUpdated);
+    const admissionDateString = `${new Date(patient.admissionDate).toLocaleDateString('it-IT')} (${lengthOfStay} gg)`;
+
     return (
         <div ref={ref} className="p-10 font-sans bg-white text-black">
             <header className="mb-8 border-b-2 border-black pb-4">
@@ -26,7 +43,7 @@ const PrintLayout = React.forwardRef<HTMLDivElement, PrintLayoutProps>(({ patien
                     <h3 className="text-lg font-bold border-b mb-4 pb-2">Dati Anagrafici e Ricovero</h3>
                     <InfoItem label="Letto" value={patient.bed} />
                     <InfoItem label="Regime Ricovero" value={patient.admissionType} />
-                    <InfoItem label="Data Ricovero" value={new Date(patient.admissionDate).toLocaleDateString('it-IT')} />
+                    <InfoItem label="Data Ricovero" value={admissionDateString} />
                     <InfoItem label="Data Nascita" value={new Date(patient.dateOfBirth).toLocaleDateString('it-IT')} />
                     <InfoItem label="Sesso" value={patient.gender === 'M' ? 'Uomo' : 'Donna'} />
                 </div>
@@ -61,7 +78,7 @@ const PrintLayout = React.forwardRef<HTMLDivElement, PrintLayoutProps>(({ patien
                 </div>
             </div>
             <footer className="mt-12 pt-4 text-xs text-center text-gray-500 border-t">
-                Registro Consegne Medicina Interna Soverato - Report generato il {new Date().toLocaleString('it-IT')}
+                Registro Consegne Medicina Interna - Report generato il {new Date().toLocaleString('it-IT')}
             </footer>
         </div>
     );

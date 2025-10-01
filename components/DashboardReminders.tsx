@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { usePatients } from '../hooks/usePatients';
-import { Patient, ExternalExam, ExamStatus } from '../types';
-import { EXAM_STATUS_NAMES } from '../constants';
+import { Patient, ExternalExam, ExamStatus, ExamCategory } from '../types';
+import { EXAM_STATUS_NAMES, EXAM_CATEGORIES } from '../constants';
 import ExamEditModal from './ExamEditModal';
 
 const getStatusBadgeColor = (status: ExamStatus) => {
@@ -18,11 +18,12 @@ const getStatusBadgeColor = (status: ExamStatus) => {
 const DashboardReminders: React.FC = () => {
     const { activePatients } = usePatients();
     const [editingExam, setEditingExam] = useState<{ patient: Patient; exam: ExternalExam } | null>(null);
+    const [activeFilter, setActiveFilter] = useState<ExamCategory | 'tutto'>('tutto');
 
     const patientsWithPendingExams = activePatients
         .map(patient => {
             const pendingExams = patient.externalExams.filter(
-                ex => ex.status !== 'effettuato'
+                ex => ex.status !== 'effettuato' && (activeFilter === 'tutto' || ex.category === activeFilter)
             ).sort((a,b) => (a.appointmentDate || a.reminderDate || 'z').localeCompare(b.appointmentDate || b.reminderDate || 'z'));
             return { ...patient, pendingExams };
         })
@@ -37,12 +38,35 @@ const DashboardReminders: React.FC = () => {
         setEditingExam(null);
     };
 
+    const filterOptions: { key: ExamCategory | 'tutto'; value: string }[] = [
+        { key: 'tutto', value: 'Tutto' },
+        ...Object.entries(EXAM_CATEGORIES).map(([key, value]) => ({ key: key as ExamCategory, value })),
+    ];
+
     return (
         <>
             <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg animate-fade-in dark:bg-slate-800">
-                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-6">Riepilogo Attività</h2>
+                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200">Riepilogo Attività</h2>
+                    <div className="flex flex-wrap gap-2 bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">
+                        {filterOptions.map(({ key, value }) => (
+                            <button
+                                key={key}
+                                onClick={() => setActiveFilter(key)}
+                                className={`px-3 py-1 text-base font-semibold rounded-md transition-colors ${
+                                    activeFilter === key
+                                    ? 'bg-blue-600 text-white shadow'
+                                    : 'text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-600'
+                                }`}
+                            >
+                                {value}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 {patientsWithPendingExams.length === 0 ? (
-                    <p className="text-center text-lg text-slate-500 py-8 dark:text-slate-400">Nessuna attività in sospeso.</p>
+                    <p className="text-center text-lg text-slate-500 py-8 dark:text-slate-400">Nessuna attività in sospeso per il filtro selezionato.</p>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                         {patientsWithPendingExams.map(patient => (

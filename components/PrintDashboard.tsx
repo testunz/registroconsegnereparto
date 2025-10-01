@@ -67,7 +67,7 @@ const PrintDashboard = React.forwardRef<HTMLDivElement, PrintDashboardProps>(({ 
     return (
         <div ref={ref} className="p-8 font-sans bg-white text-black">
             <header className="text-center mb-8">
-                <h1 className="text-3xl font-extrabold">Mappa Letti - Medicina Interna Soverato</h1>
+                <h1 className="text-3xl font-extrabold">Mappa Letti - Medicina Interna</h1>
                 <p className="text-lg">Report del {new Date().toLocaleDateString('it-IT')} ore {new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
             </header>
             

@@ -8,6 +8,7 @@ import { usePrint } from '../hooks/usePrint';
 import Modal from './Modal';
 import ExamEditModal from './ExamEditModal';
 import ConfirmationModal from './ConfirmationModal';
+import SeverityEditModal from './SeverityEditModal';
 
 interface PatientDetailProps {
   patient: Patient;
@@ -43,12 +44,27 @@ const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void
     </button>
 );
 
+const calculateLengthOfStay = (admissionDate: string, status: 'active' | 'discharged', lastUpdated: number): number => {
+    if (!admissionDate) return 0;
+    const start = new Date(admissionDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = status === 'discharged' ? new Date(lastUpdated) : new Date();
+    end.setHours(0, 0, 0, 0);
+
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays + 1;
+};
+
 const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
   const { dischargePatient, addHandover, updateHandover, addExternalExam, deleteExternalExam } = usePatients();
   
   const [activeTab, setActiveTab] = useState<ActiveTab>('clinica');
   const [isEditing, setIsEditing] = useState(false);
   const [isDischargeModalOpen, setIsDischargeModalOpen] = useState(false);
+  const [isSeverityModalOpen, setIsSeverityModalOpen] = useState(false);
   const [dischargeType, setDischargeType] = useState<DischargeType>('domicilio');
   const [editingExam, setEditingExam] = useState<ExternalExam | null>(null);
   const [examToDelete, setExamToDelete] = useState<ExternalExam | null>(null);
@@ -130,12 +146,19 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
 
 
   const isArchived = useMemo(() => patient.status === 'discharged', [patient.status]);
+  const lengthOfStay = calculateLengthOfStay(patient.admissionDate, patient.status, patient.lastUpdated);
 
   return (
     <div className="space-y-6 animate-fade-in">
-       <div className={`p-4 sm:p-6 bg-white rounded-xl shadow-lg border-l-8 dark:bg-slate-800 ${SEVERITY_COLORS[patient.severity]}`}>
+       <div 
+        className={`p-4 sm:p-6 bg-white rounded-xl shadow-lg border-l-8 dark:bg-slate-800 ${SEVERITY_COLORS[patient.severity]}`}
+       >
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
-                <div>
+                <div 
+                  className={`flex-grow ${!isArchived ? 'cursor-pointer' : ''}`}
+                  onClick={() => !isArchived && setIsSeverityModalOpen(true)}
+                  title={!isArchived ? "Clicca per modificare la gravità" : ""}
+                >
                     <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-800 dark:text-slate-100">{patient.lastName} {patient.firstName}</h2>
                     <p className="text-lg text-slate-500 mt-1 dark:text-slate-400">
                         <span className="font-semibold">Letto:</span> {patient.bed || 'N/D'} | <span className="font-semibold">Ricovero:</span> {patient.admissionType} | <span className="font-bold">{SEVERITY_NAMES[patient.severity]}</span>
@@ -215,7 +238,7 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
                     <DetailSection title="Dati Paziente">
                         <div className="space-y-2 text-base text-slate-700 dark:text-slate-300">
                             <p><strong>Data Nascita:</strong> {new Date(patient.dateOfBirth).toLocaleDateString('it-IT') || 'N/D'}</p>
-                            <p><strong>Data Ricovero:</strong> {new Date(patient.admissionDate).toLocaleDateString('it-IT') || 'N/D'}</p>
+                            <p><strong>Data Ricovero:</strong> {new Date(patient.admissionDate).toLocaleDateString('it-IT')} ({lengthOfStay})</p>
                             <p><strong>Sesso:</strong> {patient.gender === 'M' ? 'Uomo' : 'Donna'}</p>
                         </div>
                         {!isArchived && (
@@ -318,6 +341,12 @@ const PatientDetail: React.FC<PatientDetailProps> = ({ patient, onClose }) => {
         confirmButtonText="Sì, elimina"
       />
       
+      <SeverityEditModal 
+        isOpen={isSeverityModalOpen}
+        onClose={() => setIsSeverityModalOpen(false)}
+        patient={patient}
+      />
+
       {isEditing && <PatientForm isOpen={isEditing} onClose={() => setIsEditing(false)} patientToEdit={patient} />}
       <div className="hidden"><PrintLayout ref={printRef} patient={patient}/></div>
     </div>

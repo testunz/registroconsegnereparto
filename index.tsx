@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { PatientProvider } from './context/PatientContext';
+import { UserProvider } from './context/UserContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -11,8 +12,10 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <PatientProvider>
-      <App />
-    </PatientProvider>
+    <UserProvider>
+      <PatientProvider>
+        <App />
+      </PatientProvider>
+    </UserProvider>
   </React.StrictMode>
 );

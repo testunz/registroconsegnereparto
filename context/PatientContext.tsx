@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Patient, Handover, ExternalExam, DischargeType, WardNote } from '../types';
 import { getDb, saveDb } from '../services/localDbService';
+import { useUser } from './UserContext';
 
 interface PatientContextType {
   patients: Patient[];
@@ -31,20 +32,21 @@ const formatName = (name: string): string => {
 export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [wardNotes, setWardNotes] = useState<WardNote[]>([]);
+  const { currentUser } = useUser();
 
   const updateAndSavePatients = useCallback((newPatients: Patient[]) => {
     const db = getDb();
     db.patients = newPatients;
-    saveDb(db);
+    saveDb(db, currentUser || 'Sconosciuto');
     setPatients(newPatients);
-  }, []);
+  }, [currentUser]);
 
   const updateAndSaveNotes = useCallback((newNotes: WardNote[]) => {
     const db = getDb();
     db.wardNotes = newNotes;
-    saveDb(db);
+    saveDb(db, currentUser || 'Sconosciuto');
     setWardNotes(newNotes);
-  }, []);
+  }, [currentUser]);
 
   const refreshData = useCallback(() => {
     const db = getDb();
@@ -77,6 +79,35 @@ export const PatientProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (formattedData.firstName) formattedData.firstName = formatName(formattedData.firstName);
     if (formattedData.lastName) formattedData.lastName = formatName(formattedData.lastName);
     
+    const originalPatient = patients.find(p => p.id === patientId);
+    if (!originalPatient) return;
+
+    // Check if bed is being changed to an occupied bed
+    if (formattedData.bed && formattedData.bed !== originalPatient.bed) {
+      const newBed = formattedData.bed;
+      const oldBed = originalPatient.bed;
+      const otherPatientInNewBed = patients.find(p => p.status === 'active' && p.bed === newBed);
+
+      if (otherPatientInNewBed) {
+        // A patient is in the destination bed, perform a swap
+        const now = Date.now();
+        const newPatients = patients.map(p => {
+          if (p.id === patientId) {
+            // The patient being edited gets the new data and new bed
+            return { ...p, ...formattedData, lastUpdated: now };
+          }
+          if (p.id === otherPatientInNewBed.id) {
+            // The other patient gets the old bed
+            return { ...p, bed: oldBed, lastUpdated: now };
+          }
+          return p;
+        });
+        updateAndSavePatients(newPatients);
+        return; // Early return after swap
+      }
+    }
+    
+    // Default case: no swap needed
     const newPatients = patients.map(p => 
       p.id === patientId 
         ? { ...p, ...formattedData, lastUpdated: Date.now() } 

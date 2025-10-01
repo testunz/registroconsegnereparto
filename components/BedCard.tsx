@@ -27,6 +27,20 @@ const calculateAge = (dateOfBirth: string): number | null => {
     return age;
 };
 
+const calculateLengthOfStay = (admissionDate: string): number => {
+    if (!admissionDate) return 0;
+    const start = new Date(admissionDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date();
+    end.setHours(0, 0, 0, 0);
+
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays + 1;
+};
+
 const BedCard: React.FC<BedCardProps> = ({ bedNumber, patient, onSelectPatient, onAddPatient }) => {
 
   const hasPendingExams = useMemo(() => {
@@ -37,6 +51,7 @@ const BedCard: React.FC<BedCardProps> = ({ bedNumber, patient, onSelectPatient, 
   if (patient) {
     const borderColor = SEVERITY_COLORS[patient.severity];
     const age = calculateAge(patient.dateOfBirth);
+    const lengthOfStay = calculateLengthOfStay(patient.admissionDate);
 
     return (
       <div 
@@ -50,14 +65,12 @@ const BedCard: React.FC<BedCardProps> = ({ bedNumber, patient, onSelectPatient, 
         <div className="flex-grow">
             <p className="font-bold text-2xl sm:text-3xl text-slate-800 truncate dark:text-slate-100">{patient.lastName}</p>
             <p className="font-normal text-xl sm:text-2xl text-slate-600 truncate dark:text-slate-300">{patient.firstName}</p>
-            <div className="text-base text-slate-500 dark:text-slate-400 mt-3 space-y-1">
-                 {age !== null && <p>Nato/a il: {new Date(patient.dateOfBirth).toLocaleDateString('it-IT')} ({age} anni)</p>}
-                 <p>Ricovero: {new Date(patient.admissionDate).toLocaleDateString('it-IT')}</p>
+            <p className="text-base font-semibold text-slate-700 dark:text-slate-300 truncate mt-2" title={patient.mainDiagnosis}>{patient.mainDiagnosis || 'Diagnosi non specificata'}</p>
+            <div className="text-base text-slate-500 dark:text-slate-400 mt-2 space-y-1">
+                 {age !== null && <p>Età: ({age}) {new Date(patient.dateOfBirth).toLocaleDateString('it-IT')}</p>}
+                 <p>Ric: ({lengthOfStay} gg) {new Date(patient.admissionDate).toLocaleDateString('it-IT')}</p>
             </div>
         </div>
-         <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-             <p className="text-base font-semibold text-slate-700 dark:text-slate-300 truncate" title={patient.mainDiagnosis}>{patient.mainDiagnosis || 'Diagnosi non specificata'}</p>
-         </div>
       </div>
     );
   }
