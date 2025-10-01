@@ -92,14 +92,14 @@ const BedOccupancyStats: React.FC = () => {
                 
                 <div className="flex items-center gap-x-4 px-4 py-1 rounded-lg">
                     <div className="text-center">
-                        <p className={`text-base font-semibold ${stats.lduOccupied === stats.lduTotal ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>LDU</p>
-                        <p className={`text-xl font-bold ${stats.lduOccupied === stats.lduTotal ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>
+                        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">LDU</p>
+                        <p className="text-xl font-bold text-slate-700 dark:text-slate-300">
                             {stats.lduOccupied} / {stats.lduTotal}
                         </p>
                     </div>
                     <div className="text-center">
-                        <p className={`text-base font-semibold ${stats.lddOccupied === stats.lddTotal ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>LDD</p>
-                         <p className={`text-xl font-bold ${stats.lddOccupied === stats.lddTotal ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>
+                        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">LDD</p>
+                         <p className="text-xl font-bold text-slate-700 dark:text-slate-300">
                             {stats.lddOccupied} / {stats.lddTotal}
                         </p>
                     </div>
