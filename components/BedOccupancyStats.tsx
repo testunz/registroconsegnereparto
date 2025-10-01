@@ -37,13 +37,16 @@ const BedOccupancyStats: React.FC = () => {
     const stats = useMemo(() => {
         const menTotal = BEDS.men.length;
         const womenTotal = BEDS.women.length;
-        const ldTotal = BEDS.ldu.length + BEDS.ldd.length;
+        const lduTotal = BEDS.ldu.length;
+        const lddTotal = BEDS.ldd.length;
 
         const menOccupied = activePatients.filter(p => BEDS.men.includes(p.bed)).length;
         const womenOccupied = activePatients.filter(p => BEDS.women.includes(p.bed)).length;
-        const ldOccupied = activePatients.filter(p => BEDS.ldu.includes(p.bed) || BEDS.ldd.includes(p.bed)).length;
-        const totalOccupied = menOccupied + womenOccupied + ldOccupied;
-        const totalBeds = menTotal + womenTotal + ldTotal;
+        const lduOccupied = activePatients.filter(p => BEDS.ldu.includes(p.bed)).length;
+        const lddOccupied = activePatients.filter(p => BEDS.ldd.includes(p.bed)).length;
+
+        const totalOccupied = menOccupied + womenOccupied + lduOccupied + lddOccupied;
+        const totalBeds = menTotal + womenTotal + lduTotal + lddTotal;
 
         const ordinarioCount = activePatients.filter(p => p.admissionType === 'ordinario').length;
         const lungodegenzaCount = activePatients.filter(p => p.admissionType === 'lungodegenza').length;
@@ -57,7 +60,7 @@ const BedOccupancyStats: React.FC = () => {
         const totalWithSeverity = severities.rosso + severities.giallo + severities.verde;
 
 
-        return { menTotal, womenTotal, ldTotal, menOccupied, womenOccupied, ldOccupied, totalOccupied, totalBeds, ordinarioCount, lungodegenzaCount, severities, totalWithSeverity };
+        return { menTotal, womenTotal, lduTotal, lddTotal, menOccupied, womenOccupied, lduOccupied, lddOccupied, totalOccupied, totalBeds, ordinarioCount, lungodegenzaCount, severities, totalWithSeverity };
     }, [activePatients]);
 
     const getPercentage = (count: number, total: number) => {
@@ -70,7 +73,22 @@ const BedOccupancyStats: React.FC = () => {
             <div className="mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap justify-center items-center gap-x-6 gap-y-2 sm:gap-x-12">
                 <StatItem label="Uomini" occupied={stats.menOccupied} total={stats.menTotal} />
                 <StatItem label="Donne" occupied={stats.womenOccupied} total={stats.womenTotal} />
-                <StatItem label="Stanze LD" occupied={stats.ldOccupied} total={stats.ldTotal} />
+                
+                <div className="flex items-center gap-x-4 bg-slate-100 dark:bg-slate-700/50 px-4 py-1 rounded-lg">
+                    <div className="text-center">
+                        <p className={`text-base font-semibold text-sky-600 dark:text-sky-400`}>LDU</p>
+                        <p className={`text-xl font-bold ${stats.lduOccupied === stats.lduTotal ? 'text-red-500' : 'text-sky-600 dark:text-sky-400'}`}>
+                            {stats.lduOccupied} / {stats.lduTotal}
+                        </p>
+                    </div>
+                    <div className="text-center">
+                        <p className={`text-base font-semibold text-pink-600 dark:text-pink-400`}>LDD</p>
+                         <p className={`text-xl font-bold ${stats.lddOccupied === stats.lddTotal ? 'text-red-500' : 'text-pink-600 dark:text-pink-400'}`}>
+                            {stats.lddOccupied} / {stats.lddTotal}
+                        </p>
+                    </div>
+                </div>
+
                  <div className="border-l border-slate-300 dark:border-slate-600 h-10 self-center"></div>
                 <StatItemSimple label="Ordinario" value={stats.ordinarioCount} />
                 <StatItemSimple label="Lungodegenza" value={stats.lungodegenzaCount} />
